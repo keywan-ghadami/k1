@@ -1,4 +1,5 @@
 __pycache__/
 *.pyc
 programme/cnf/
+programme/cnf_varianten/
 programme/kalibrierung*.json

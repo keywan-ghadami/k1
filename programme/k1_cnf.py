@@ -18,7 +18,14 @@ PAD = [0x80000000, 0, 0, 0, 0, 0, 0, 0x00000100]
 
 
 class CNF:
-    def __init__(self):
+    """Encoding-Variante (Abschnitt 9.1) waehlbar, Default = bisheriges Verhalten:
+      xor_nativ=True   natives XOR-Gatter (XAIG). False: ueber AND/OR zerlegt (AIG-Basis).
+      carry_variante="or"           Uebertrag/Maj als einzelnes Tseitin-Gatter (bisher).
+                      "and_minimal" Uebertrag/Maj als 1-AND-Zerlegung (Abschnitt 9.1,
+                                    "AND-minimaler Uebertrag": weniger AND, mehr XOR/Gesamt)."""
+    def __init__(self, xor_nativ=True, carry_variante="or"):
+        self.xor_nativ = xor_nativ
+        self.carry_variante = carry_variante
         self.n = 0; self.cls = []; self.val = {}
         self.TRUE = self.newvar(1); self.cls.append([self.TRUE])
     def newvar(self, v):
@@ -31,6 +38,9 @@ class CNF:
         if l == -self.TRUE: return 0
         return None
     def XOR(self, a, b):
+        if self.xor_nativ: return self._XOR_nativ(a, b)
+        return self._XOR_aig(a, b)
+    def _XOR_nativ(self, a, b):
         ca, cb = self.is_const(a), self.is_const(b)
         if ca is not None: return b if ca == 0 else -b
         if cb is not None: return a if cb == 0 else -a
@@ -40,6 +50,15 @@ class CNF:
         self.add(a, b, -c); self.add(a, -b, c)
         self.add(-a, b, c); self.add(-a, -b, -c)
         return c
+    def _XOR_aig(self, a, b):
+        """AIG-Basis (Abschnitt 9.1): kein natives XOR-Gatter, ueber AND/OR
+        zerlegt - kostet drei AND-Aequivalente statt eines XOR-Gatters."""
+        ca, cb = self.is_const(a), self.is_const(b)
+        if ca is not None: return b if ca == 0 else -b
+        if cb is not None: return a if cb == 0 else -a
+        if a == b: return self.const(0)
+        if a == -b: return self.const(1)
+        return self.OR(self.AND(a, -b), self.AND(-a, b))
     def AND(self, a, b):
         ca, cb = self.is_const(a), self.is_const(b)
         if ca is not None: return self.const(0) if ca == 0 else b
@@ -54,10 +73,18 @@ class CNF:
         for x, y, z in ((a,b,c), (b,a,c), (c,a,b)):
             k = self.is_const(x)
             if k is not None: return self.OR(y,z) if k == 1 else self.AND(y,z)
+        if self.carry_variante == "and_minimal": return self._MAJ_and_minimal(a, b, c)
+        return self._MAJ_or(a, b, c)
+    def _MAJ_or(self, a, b, c):
+        """Bisheriges Verhalten: Majority als einzelnes Tseitin-Gatter."""
         m = self.newvar((self.lv(a)&self.lv(b)) ^ (self.lv(a)&self.lv(c)) ^ (self.lv(b)&self.lv(c)))
         self.add(-a,-b,m); self.add(-a,-c,m); self.add(-b,-c,m)
         self.add(a,b,-m); self.add(a,c,-m); self.add(b,c,-m)
         return m
+    def _MAJ_and_minimal(self, a, b, c):
+        """AND-minimale Form (Abschnitt 9.1 / auftrag_1_2.py maj_MIN):
+        Maj(a,b,c) = ((a xor b) AND (b xor c)) xor b - ein AND statt drei."""
+        return self.XOR(self.AND(self.XOR(a, b), self.XOR(b, c)), b)
     def CH(self, e, f, g): return self.XOR(g, self.AND(e, self.XOR(f, g)))
     def wconst(self, v): return [self.const((v >> i) & 1) for i in range(32)]
     def wvar(self, v):   return [self.newvar((v >> i) & 1) for i in range(32)]
@@ -95,11 +122,12 @@ def sha_ref(W16, r):
     return [(x+y) & M32 for x,y in zip([a,b,c,d,e,f,g,h], IV)]
 
 
-def baue(r, modus, W16_ref, ziel):
+def baue(r, modus, W16_ref, ziel, xor_nativ=True, carry_variante="or"):
     """CNF fuer: r-rundige Kompression einer Nachricht == ziel.
     modus 'block' = 512 freie Bits, 'k1' = 256 freie Bits mit festem Padding.
+    xor_nativ/carry_variante: Kodierungsvariante nach Abschnitt 9.1/22.4, siehe CNF.
     Rueckgabe: (CNF, freie Literale in Reihenfolge W0.bit0 .. W7.bit31, H)"""
-    F = CNF()
+    F = CNF(xor_nativ=xor_nativ, carry_variante=carry_variante)
     if modus == "block":
         W = [F.wvar(W16_ref[i]) for i in range(16)]
         frei = [l for w in W for l in w]
