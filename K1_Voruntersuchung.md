@@ -1344,9 +1344,10 @@ Kryptanalyse.
   (Abschnitt 21.5). Ergebnis: null von 20.160 geprüften Paaren sind gemeinsam
   neutral, über dieselben zehn Instanzen. Satz K gilt damit auch auf
   Paarebene. Höhere Ordnungen (Tripel usw.) bleiben unbeauftragt offen.
-- **CDCL gegen Guess-and-Determine.** Abschnitt 20 misst
-  Unit-Propagation. Ob Konfliktlernen die Kurve verschiebt, ist die offene
-  Hälfte von 17.3 und braucht ein Solver-Binary.
+- ~~CDCL gegen Guess-and-Determine~~ — **erledigt** (Abschnitt 22). CaDiCaL
+  und Kissat lösen r = 18 in ~109 s, scheitern beide an r = 19 innerhalb
+  600 s — deckungsgleich mit der Literaturfront und deutlich unterhalb der
+  strukturellen Reichweite r = 22 aus Abschnitt 20.
 - **Variante T mit schrittweise wiedereingesetzten Rechtsrotationen.** Die
   Reichweitentabelle in 18.8 sagt eine Klippe voraus. Direkt messbar wäre, ob
   ein Fensterlöser mit w+1 Ebenen die vorhergesagten Kosten trifft.
@@ -1378,17 +1379,15 @@ Erledigt: Minimalgewicht 467 für beide Codes, 3.749 Iterationen ohne
 Verbesserung. **Offen bleibt** ein exakter Beweis der Minimalität — dafür wären
 Brouwer-Zimmermann-Schranken nötig, die erheblich mehr Rechenzeit erfordern.
 
-### 17.3 ~~Werkzeugkette gegen die Forschungsfront kalibrieren~~ — Werkzeug gebaut, Messung siehe Abschnitt 20
+### 17.3 ~~Werkzeugkette gegen die Forschungsfront kalibrieren~~ — erledigt (Abschnitte 20 und 22)
 
 Die Kodierung liegt vor und ist verifiziert (`k1_sat_kodierung.py`,
-Abschnitt 20.1). Die eigentliche Kalibrierung gegen einen externen CDCL-Solver
-steht noch aus und erfordert ein Solver-Binary; das Messgerüst dafür ist
-`k1_sat_messlauf.py`.
-
-**Ohne externen Solver bereits erledigt:** Abschnitt 20 misst die
-Fortschrittskurve über eine eigene Propagationsmaschine und liefert damit die
-gesuchte Zahl für die eigene Reichweite — allerdings für ein
-Guess-and-Determine-Verfahren, nicht für CDCL.
+Abschnitt 20.1). Abschnitt 20 misst die Fortschrittskurve ohne externen
+Solver über die eigene Propagationsmaschine (Guess-and-Determine). Abschnitt
+22 liefert die zunächst fehlende zweite Hälfte: die Messung gegen einen
+echten externen CDCL-Solver (CaDiCaL, Kissat, über PySAT statt Solver-Binary
+auf dem PATH). Ergebnis: 18 Runden lösbar, 19 nicht innerhalb 600 s —
+deckungsgleich mit der Literaturfront.
 
 Zur Einordnung der Literaturfront: praktische SAT-Preimages reichen bis
 17–18 Runden (19 abgeschwächt), praktische Kollisionen bis 31 Runden.
@@ -1987,6 +1986,88 @@ routinemäßig weiterzutreiben.
 
 ---
 
+## 22. CDCL-Kalibrierung gegen einen externen Solver
+
+Abschnitt 17.3 nennt als offenen Halbschritt: die Kodierung (`k1_sat_kodierung.py`)
+liegt vor, die eigentliche Messung gegen einen externen CDCL-Solver stand noch
+aus, weil kein Solver-Binary verfügbar war. Abschnitt 16 führt das als offenen
+Punkt: „Ob Konfliktlernen die Kurve verschiebt, ist die offene Hälfte von
+17.3.“ Beides ist jetzt gemessen.
+
+### 22.1 Werkzeug
+
+Der Blocker war kein fehlender Solver, sondern nur ein fehlendes Binary auf
+dem PATH: `pip install python-sat` liefert vorkompilierte In-Prozess-Bindings
+für CaDiCaL (mehrere Versionen) und Kissat mit — dieselben Solver, mit denen
+die Literaturergebnisse (17–18 Runden praktisch, 31 Kollisionen) selbst
+erzielt wurden. `k1_sat_messlauf.py` ist entsprechend umgestellt: Aufruf über
+die PySAT-API statt Subprocess/Binary, Timeout über einen Kindprozess
+erzwungen (die C-Solver kennen selbst keinen Timeout).
+
+Gegen einen eigens für K1 gebauten Solver wurde bewusst entschieden (siehe
+Diskussion in der Konversation zu diesem Abschnitt): Der teure Teil eines
+CDCL-Solvers — Konfliktanalyse, Klausellernen, Restart-Heuristiken — ist
+gerade der Teil, den `k1_propagation.py` nicht abdeckt, und ein Nachbau davon
+wäre ein Projekt für sich, ohne die Kalibrierungsfrage selbst zu beantworten.
+Für den Vergleich mit der Forschungsfront ist der Standardsolver zudem die
+methodisch richtige Referenz, nicht ein Workaround.
+
+### 22.2 Messung
+
+Modell `block` (freier 512-Bit-Block, IV fest — das Setting der Literatur,
+nicht das K1-spezifische Modell mit festem Padding). Instanzen mit
+zufälligem Ziel (`cnf/echt_block_r*.cnf`, Abschnitt 5 von
+`k1_sat_kodierung.py`), nicht die konstruktionsgemäß erfüllbaren
+Kontrollinstanzen. Timeout 600 s, je Rundenzahl eine Instanz.
+
+| Runden | CaDiCaL 1.9.5 | Kissat 4.0.4 |
+|---|---|---|
+| 12 | 0,227 s (SAT) | — |
+| 14 | 0,247 s (SAT) | — |
+| 16 | 0,161 s (SAT) | — |
+| 17 | 0,871 s (SAT) | — |
+| 18 | 108,878 s (SAT) | — |
+| 19 | **TIMEOUT** (> 600 s) | **TIMEOUT** (> 600 s) |
+
+Kissat wurde gezielt gegen r = 19 gegengeprüft, um auszuschließen, dass die
+Grenze ein Artefakt eines einzelnen Solvers ist: beide Solver scheitern
+unabhängig voneinander an derselben Rundenzahl innerhalb derselben Frist.
+
+### 22.3 Einordnung
+
+**Die Werkzeugkette trifft die publizierte Front fast exakt.** 18 Runden
+lösbar (wenn auch mit steilem Preisanstieg: Faktor ≈ 125 von r=17 auf r=18),
+19 Runden nicht innerhalb von 600 s — deckungsgleich mit der in 17.3
+zitierten Literaturangabe „praktische SAT-Preimages bis 17–18 Runden, 19
+abgeschwächt“. Das ist keine Kalibrierung *gegen* die Front, sondern eine
+*Reproduktion* der Front mit eigenem Werkzeug: das eigene CNF ist korrekt
+kodiert und mindestens so lösbar wie publizierte Instanzen vergleichbarer
+Bauart.
+
+**Beantwortung der offenen Frage aus Abschnitt 16.** Konfliktlernen
+verschiebt die Kurve nicht in der Nähe der strukturellen Reichweite von
+Guess-and-Determine (Abschnitt 20.3: r = 22, dort aber nur um den Preis von
+g(22) = 224 zu ratenden Bits, also 2²²⁴ — keine praktikable Zahl). CDCL löst
+stattdessen bis r = 18 und bricht bei r = 19 ein, deutlich unterhalb der
+strukturellen Grenze und in derselben Größenordnung, in der Abschnitt 20 den
+Sprung von g(16) = 0 auf g(17) = 64 misst. Die beiden unabhängig gemessenen
+Kurven — Propagationsstruktur (Abschnitt 20, ohne Suche) und tatsächliche
+CDCL-Laufzeit (hier, mit Suche) — brechen an vergleichbarer Stelle ein. Das
+stützt die Lesart aus Abschnitt 20/21: Der Schwierigkeitssprung ab r = 17 ist
+ein reales Merkmal der Kompressionsfunktion, keine Eigenheit der jeweiligen
+Messmethode.
+
+**Reichweite der Aussage.** Gemessen ist das Literatur-Modell `block`
+(freier Block), nicht das K1-spezifische Modell mit festem Padding und 256
+freien Bits. Ein Vergleich beider Modelle unter identischer
+Solver-Kalibrierung — die in 17.4 skizzierte Frage nach dem Effekt der
+kleineren K1-CNF auf die erreichbare Rundenzahl — ist damit technisch bereit
+(`k1_sat_kodierung.py` müsste dafür Abschnitt 5 auch für `modus="k1"` mit
+echtem Zufallsziel erzeugen, aktuell nur für `block`), aber noch nicht
+gemessen.
+
+---
+
 ## Anhang: Programme
 
 Alle Messungen sind mit den beiliegenden Skripten reproduzierbar.
@@ -2056,7 +2137,7 @@ validiert.
 | `k1_abwaertsreichweite.py` | Abwärtsreichweite je Schrittzahl und Variante (18.8) |
 | `k1_cnf.py` | Wiederverwendbarer CNF-Baustein der rundenreduzierten Kompression (20.1) |
 | `k1_sat_kodierung.py` | Kodierung, drei Korrektheitsnachweise, DIMACS-Export (20.1) |
-| `k1_sat_messlauf.py` | Messgerüst für externen CDCL-Solver, Exponentenanpassung (17.3) |
+| `k1_sat_messlauf.py` | Messlauf gegen CaDiCaL/Kissat via PySAT, Exponentenanpassung (17.3, 22) |
 | `k1_propagation.py` | Unit-Propagation mit zwei beobachteten Literalen, mit Rücknahme |
 | `k1_gnd_kurve.py` | Propagation ohne Raten, g(r) für drei Rateordnungen (20.2, 20.3) |
 | `k1_gnd_vollstaendig.py` | Korrektheitsprüfung, vollständige Kurve, wortweise gierig (20.3, 20.4) |
@@ -2120,3 +2201,4 @@ validiert.
 | Zufallskontrolle Ratemenge, r = 17 | 254–256 von 256 |
 | CNF-Größe K1(18) / K1(64) | 15.058 / 71.480 Variablen |
 | Neutrale Einzelbits / Paare bei r = 17 | 0 von 64 / **0 von 20.160** |
+| CDCL-Reichweite (block-Modell, 600 s) | **r = 18** lösbar (109 s), r = 19 Timeout (CaDiCaL + Kissat) |
