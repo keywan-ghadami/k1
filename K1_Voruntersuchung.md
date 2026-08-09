@@ -1,9 +1,10 @@
 # Analyse der SHA-256-Kompressionsfunktion unter Bitcoin-Randbedingungen
 
 **Arbeitsdokument, Stand 9. August 2026**
-*Ergänzt um Abschnitt 18 (Rückwärtsrechnung), Abschnitt 19 (Nachprüfung) und
-Abschnitt 20 (Fortschrittskurve für K1(r)). Korrekturen aus der Nachprüfung
-sind an Ort und Stelle eingetragen und in 19.2 aufgeführt.*
+*Ergänzt um Abschnitt 18 (Rückwärtsrechnung), Abschnitt 19 (Nachprüfung),
+Abschnitt 20 (Fortschrittskurve für K1(r)) und Abschnitt 21 (Neutrale Bits
+bei r = 17). Korrekturen aus der Nachprüfung sind an Ort und Stelle
+eingetragen und in 19.2 aufgeführt.*
 
 Untersuchungsgegenstand: SHA-256 auf 32-Byte-Eingabe (hier **K1** genannt) —
 identisch mit dem zweiten Durchlauf des Bitcoin-Double-Hash — sowie mehrere
@@ -1335,10 +1336,10 @@ Kryptanalyse.
 - ~~Rückwärtsrechnung von K1~~ — **bearbeitet** (Abschnitt 18). Deterministisch
   über alle 64 Runden; die Sperre ist auf den Richtungskonflikt zwischen
   Übertrag und linearer Schicht lokalisiert und beziffert (Satz I).
-- **Neutrale Bits bei r = 17.** Die Kurve aus 20.3 beziffert den Wechselkurs
-  auf 32 Bit Freiheit je Runde. Direkt messbar wäre, wie viele neutrale Bits
-  tatsächlich existieren — mit derselben Propagationsmaschine, ohne externen
-  Solver.
+- ~~Neutrale Bits bei r = 17~~ — **erledigt** (Abschnitt 21). Ergebnis: null
+  von 64 geratenen Bits sind neutral, über zehn Instanzen reproduziert. Der
+  Sprung von g(16) = 0 auf g(17) = 64 ist damit kein Messartefakt eines zu
+  groß geratenen Backdoors, sondern die tatsächlich benötigte Zahl.
 - **CDCL gegen Guess-and-Determine.** Abschnitt 20 misst
   Unit-Propagation. Ob Konfliktlernen die Kurve verschiebt, ist die offene
   Hälfte von 17.3 und braucht ein Solver-Binary.
@@ -1871,6 +1872,84 @@ Propagationsmaschine messbar, ohne externen Solver.
 
 ---
 
+## 21. Neutrale Bits bei r = 17
+
+Abschnitt 20 misst g(17) = 64: bei wortweiser Ratereihenfolge bestimmt
+Unit-Propagation den gesamten Rest des Systems erst, nachdem W₀ und W₁
+vollständig geraten sind. Offen blieb (Abschnitt 16), ob diese 64 Bits
+tatsächlich alle nötig sind oder ob ein Teil davon **neutral** ist — also
+sein Wert für das Schließen des Systems irrelevant wäre. Wäre das für 32 der
+64 Bits der Fall, entspräche der scheinbare Sprung von g(16) = 0 auf
+g(17) = 64 tatsächlich der glatten Rate von 32 Bit je Runde, die ab r = 18
+gemessen wird — der Sprung wäre dann ein Artefakt eines zu groß geratenen
+Backdoors, nicht die wahre Zahl.
+
+### 21.1 Definition
+
+Übertragen aus dem Begriff der neutralen Bits in der differentiellen
+Kryptanalyse (Biham/Chen 2004) auf Guess-and-Determine statt auf ein
+differentielles Merkmal:
+
+> Ein geratenes Bit *i* ist **neutral**, wenn die Propagation bei allen
+> übrigen 63 geratenen Bits auf ihrem Lösungswert **auch mit *i* auf dem
+> geflippten Wert** konfliktfrei alle Variablen bestimmt.
+
+Neutralität bedeutet: Bit *i* musste zwar irgendeinen Wert bekommen, aber
+nicht notwendig den der Lösung — das System schließt so oder so. Ein
+neutrales Bit zählt dann nicht zur eigentlich nötigen Ratemenge.
+
+### 21.2 Messung
+
+Werkzeug: dieselbe Propagationsmaschine aus Abschnitt 20
+(`k1_propagation.py`, Zwei-Watch-Literale mit Rücknahme), kein externer
+Solver. Für jede der 64 geratenen Positionen wird die volle
+64-Bit-Zuweisung mit genau diesem einen Bit geflippt gegen die Maschine
+geprüft, danach zurückgesetzt (`mark`/`undo`). Zehn unabhängige
+Zufallsinstanzen (`k1_neutral_bits.py`).
+
+| Seed | g(r) | neutrale Bits |
+|---|---|---|
+| 0–9 | 64 | **0** |
+
+**Mittel über 10 Instanzen: 0,00 neutrale Bits von 64. Minimum 0, Maximum 0.**
+
+### 21.3 Positivkontrolle
+
+Dass „null neutrale Bits“ ein echter Befund und nicht ein Fehler in der
+Rücknahme-Logik ist, zeigt die Gegenprobe: Bits **außerhalb** der
+Ratemenge sind durch Propagation bereits erzwungen und müssen beim Flippen
+sofort einen Konflikt auslösen.
+
+| Seed | Stichprobe | Konflikt bei Flip |
+|---|---|---|
+| 0 | 20 | **20 / 20** |
+| 1 | 20 | **20 / 20** |
+| 2 | 20 | **20 / 20** |
+
+Die Maschinerie unterscheidet forcierte von freien Bits also zuverlässig;
+das Nullergebnis in 21.2 ist damit keine Artefakt-Erklärung wert.
+
+### 21.4 Einordnung
+
+**Satz K.** Bei r = 17 ist keines der 64 wortweise geratenen Nachrichtenbits
+neutral bezüglich Unit-Propagation — geprüft einzeln, an zehn unabhängigen
+Instanzen, ohne Ausnahme.
+
+Damit ist die in Abschnitt 16 offene Frage entschieden: **g(17) = 64 ist die
+tatsächliche Zahl, kein Messartefakt eines überdimensionierten Backdoors.**
+Der Sprung von 0 auf 64 zwischen r = 16 und r = 17 ist real; die glatte Rate
+von 32 Bit je Runde beginnt erst ab r = 17 → 18, nicht schon beim Übergang
+in die rundenreduzierte Nachrichtenexpansion hinein.
+
+**Reichweite der Aussage.** Geprüft ist Einzelbit-Neutralität — ob genau ein
+Bit bei sonst unveränderter Lösung geflippt werden kann. Nicht geprüft ist
+gemeinsame Neutralität mehrerer Bits gleichzeitig (ein Paar könnte
+neutral sein, obwohl keines der beiden es einzeln ist). Nach Lehre 15
+(Propagationsgewinne kommen in Wortquanten, nicht bitweise) ist das kein
+naheliegender nächster Schritt, aber unbeauftragt logisch offen.
+
+---
+
 ## Anhang: Programme
 
 Alle Messungen sind mit den beiliegenden Skripten reproduzierbar.
@@ -1945,6 +2024,7 @@ validiert.
 | `k1_gnd_kurve.py` | Propagation ohne Raten, g(r) für drei Rateordnungen (20.2, 20.3) |
 | `k1_gnd_vollstaendig.py` | Korrektheitsprüfung, vollständige Kurve, wortweise gierig (20.3, 20.4) |
 | `k1_gnd_bitweise.py` | Bitweise gierige Suche mit Zufallskontrolle (20.4) |
+| `k1_neutral_bits.py` | Neutrale-Bits-Test bei r = 17, mit Positivkontrolle (Abschnitt 21) |
 | `nachpruefung_saetze.py` | Nachrechnung Sätze 1–8, Ringstruktur, AND-minimale Formen (19.1) |
 | `nachpruefung_k1_1.py` | Nachrechnung K1-1 erschöpfend: Kollisionen, ANF, Nichtlinearität (19.1) |
 | `nachpruefung_struktur.py` | Nachrechnung Satz 2/6, RX-Konstanten, Minimalgewicht 467 (19.1) |
