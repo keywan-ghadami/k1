@@ -1340,6 +1340,10 @@ Kryptanalyse.
   von 64 geratenen Bits sind neutral, über zehn Instanzen reproduziert. Der
   Sprung von g(16) = 0 auf g(17) = 64 ist damit kein Messartefakt eines zu
   groß geratenen Backdoors, sondern die tatsächlich benötigte Zahl.
+- ~~Gemeinsame Neutralität von Bitpaaren bei r = 17~~ — **erledigt**
+  (Abschnitt 21.5). Ergebnis: null von 20.160 geprüften Paaren sind gemeinsam
+  neutral, über dieselben zehn Instanzen. Satz K gilt damit auch auf
+  Paarebene. Höhere Ordnungen (Tripel usw.) bleiben unbeauftragt offen.
 - **CDCL gegen Guess-and-Determine.** Abschnitt 20 misst
   Unit-Propagation. Ob Konfliktlernen die Kurve verschiebt, ist die offene
   Hälfte von 17.3 und braucht ein Solver-Binary.
@@ -1941,12 +1945,45 @@ Der Sprung von 0 auf 64 zwischen r = 16 und r = 17 ist real; die glatte Rate
 von 32 Bit je Runde beginnt erst ab r = 17 → 18, nicht schon beim Übergang
 in die rundenreduzierte Nachrichtenexpansion hinein.
 
-**Reichweite der Aussage.** Geprüft ist Einzelbit-Neutralität — ob genau ein
-Bit bei sonst unveränderter Lösung geflippt werden kann. Nicht geprüft ist
-gemeinsame Neutralität mehrerer Bits gleichzeitig (ein Paar könnte
-neutral sein, obwohl keines der beiden es einzeln ist). Nach Lehre 15
-(Propagationsgewinne kommen in Wortquanten, nicht bitweise) ist das kein
-naheliegender nächster Schritt, aber unbeauftragt logisch offen.
+**Reichweite der Aussage (Stand vor 21.5).** Geprüft war Einzelbit-Neutralität
+— ob genau ein Bit bei sonst unveränderter Lösung geflippt werden kann. Nicht
+geprüft war gemeinsame Neutralität mehrerer Bits gleichzeitig (ein Paar
+könnte neutral sein, obwohl keines der beiden es einzeln ist). Nach Lehre 15
+(Propagationsgewinne kommen in Wortquanten, nicht bitweise) war das kein
+naheliegender nächster Schritt, aber unbeauftragt logisch offen — geklärt in
+21.5.
+
+### 21.5 Gemeinsame Neutralität von Bitpaaren
+
+Direkte Fortsetzung der in 21.4 offen gelassenen Frage: Kann ein **Paar**
+geratener Bits gemeinsam geflippt werden, obwohl keines der beiden einzeln
+neutral ist?
+
+**Definition.** Ein Paar (i, j) geratener Bits ist **gemeinsam neutral**,
+wenn die Propagation bei allen übrigen 62 geratenen Bits auf ihrem
+Lösungswert und i **und** j gleichzeitig geflippt konfliktfrei alle
+Variablen bestimmt.
+
+**Messung.** Dieselbe Propagationsmaschine, dieselben zehn Instanzen wie in
+21.2. Bei 64 geratenen Bits sind das C(64,2) = 2016 Paare je Instanz, 20.160
+insgesamt (`k1_neutral_bits_paare.py`).
+
+| Seed | Paare geprüft | gemeinsam neutral |
+|---|---|---|
+| 0–9 | 2016 je Seed | **0** |
+
+**Insgesamt: 0 gemeinsam neutrale Paare von 20.160 geprüften, über zehn
+unabhängige Instanzen.**
+
+**Einordnung.** Satz K erweitert sich damit auf die zweite Ordnung: Nicht
+nur ist kein einzelnes Bit der 64 neutral, auch kein Paar ist es gemeinsam.
+Die Ratemenge ist nicht nur einzeln, sondern paarweise starr. Höhere
+Ordnungen (Tripel usw.) sind weiterhin ungeprüft, aber bei 0/20.160 auf
+Paarebene und der bereits in Lehre 15 dokumentierten Wortquanten-Struktur
+ist ein positiver Fund bei Tripeln unwahrscheinlich; das Aufwand-Ertrags-
+Verhältnis (C(64,3) = 41.664 Prüfungen je Instanz, ≈ 20-fache Laufzeit von
+21.5) spricht dafür, diese Frage unbeauftragt offen zu lassen statt sie
+routinemäßig weiterzutreiben.
 
 ---
 
@@ -2025,6 +2062,7 @@ validiert.
 | `k1_gnd_vollstaendig.py` | Korrektheitsprüfung, vollständige Kurve, wortweise gierig (20.3, 20.4) |
 | `k1_gnd_bitweise.py` | Bitweise gierige Suche mit Zufallskontrolle (20.4) |
 | `k1_neutral_bits.py` | Neutrale-Bits-Test bei r = 17, mit Positivkontrolle (Abschnitt 21) |
+| `k1_neutral_bits_paare.py` | Gemeinsame Bitpaar-Neutralität bei r = 17 (Abschnitt 21.5) |
 | `nachpruefung_saetze.py` | Nachrechnung Sätze 1–8, Ringstruktur, AND-minimale Formen (19.1) |
 | `nachpruefung_k1_1.py` | Nachrechnung K1-1 erschöpfend: Kollisionen, ANF, Nichtlinearität (19.1) |
 | `nachpruefung_struktur.py` | Nachrechnung Satz 2/6, RX-Konstanten, Minimalgewicht 467 (19.1) |
@@ -2081,3 +2119,4 @@ validiert.
 | bitweise gierige Ratemenge, r = 17 | 73 (schlechter als 64) |
 | Zufallskontrolle Ratemenge, r = 17 | 254–256 von 256 |
 | CNF-Größe K1(18) / K1(64) | 15.058 / 71.480 Variablen |
+| Neutrale Einzelbits / Paare bei r = 17 | 0 von 64 / **0 von 20.160** |
