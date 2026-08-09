@@ -1,34 +1,44 @@
 """Messlauf der Kalibrierung (Abschnitt 17.3).
 
-Laesst einen externen SAT-Solver ueber die von k1_sat_kodierung.py erzeugten
+Laesst einen CDCL-SAT-Solver ueber die von k1_sat_kodierung.py erzeugten
 Instanzen laufen, protokolliert Loesungszeiten und passt den Exponenten an.
 
+Solver kommen ueber das PySAT-Paket (`pip install python-sat`) als
+vorkompilierte In-Prozess-Bindings mit, kein Solver-Binary auf dem PATH
+noetig. Verfuegbare Namen u.a.: cadical195, cadical153, kissat404, glucose4,
+maplechrono, minisat22 (siehe pysat.solvers.SolverNames). Der Timeout wird
+per Kindprozess erzwungen, da die C-Loeser selbst kein Timeout kennen.
+
 Aufruf:
-    python3 k1_sat_messlauf.py --solver cadical --timeout 3600
-    python3 k1_sat_messlauf.py --solver "kissat --sat" --timeout 7200 --wdh 5
+    python3 k1_sat_messlauf.py --solver cadical195 --timeout 300
+    python3 k1_sat_messlauf.py --solver kissat404 --timeout 600 --wdh 1
 
 Erwartet die CNF-Dateien im Unterverzeichnis cnf/.
-Ohne externe Abhaengigkeiten ausser dem Solver-Binary.
 """
-import argparse, glob, json, math, os, re, statistics, subprocess, sys, time
+import argparse, glob, json, math, multiprocessing, re, statistics, sys, time
+
+def _solve_worker(solver_name, datei, q):
+    from pysat.formula import CNF
+    from pysat.solvers import Solver
+    cnf = CNF(from_file=datei)
+    with Solver(name=solver_name, bootstrap_with=cnf.clauses) as s:
+        q.put("SAT" if s.solve() else "UNSAT")
 
 def lauf(solver, datei, timeout):
+    ctx = multiprocessing.get_context("spawn")
+    q = ctx.Queue()
+    p = ctx.Process(target=_solve_worker, args=(solver, datei, q))
     t0 = time.time()
-    try:
-        p = subprocess.run(solver.split() + [datei], capture_output=True,
-                           text=True, timeout=timeout)
-        dt = time.time() - t0
-        aus = p.stdout
-        if "s SATISFIABLE" in aus:   return "SAT", dt
-        if "s UNSATISFIABLE" in aus: return "UNSAT", dt
-        return "UNBEKANNT", dt
-    except subprocess.TimeoutExpired:
+    p.start()
+    p.join(timeout)
+    if p.is_alive():
+        p.terminate()
+        p.join()
         return "TIMEOUT", float(timeout)
-    except FileNotFoundError:
-        print(f"Solver '{solver.split()[0]}' nicht gefunden. "
-              f"Installieren, z.B.: apt install cadical  oder  "
-              f"git clone github.com/arminbiere/kissat && ./configure && make")
-        sys.exit(2)
+    dt = time.time() - t0
+    if not q.empty():
+        return q.get(), dt
+    return "UNBEKANNT", dt
 
 def fit(punkte):
     """log2(t) = alpha * r + beta, kleinste Quadrate. Gibt (alpha, beta, R2)."""
@@ -47,7 +57,7 @@ def fit(punkte):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--solver", default="cadical")
+    ap.add_argument("--solver", default="cadical195")
     ap.add_argument("--timeout", type=int, default=3600)
     ap.add_argument("--wdh", type=int, default=3, help="Instanzen je Rundenzahl")
     ap.add_argument("--muster", default="cnf/echt_block_r*.cnf")
