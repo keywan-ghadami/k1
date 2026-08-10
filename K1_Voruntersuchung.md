@@ -1336,10 +1336,14 @@ Kryptanalyse.
 - ~~Rückwärtsrechnung von K1~~ — **bearbeitet** (Abschnitt 18). Deterministisch
   über alle 64 Runden; die Sperre ist auf den Richtungskonflikt zwischen
   Übertrag und linearer Schicht lokalisiert und beziffert (Satz I).
-- ~~Neutrale Bits bei r = 17~~ — **erledigt** (Abschnitt 21). Ergebnis: null
-  von 64 geratenen Bits sind neutral, über zehn Instanzen reproduziert. Der
-  Sprung von g(16) = 0 auf g(17) = 64 ist damit kein Messartefakt eines zu
-  groß geratenen Backdoors, sondern die tatsächlich benötigte Zahl.
+- ~~Neutrale Bits bei r = 17~~ — **erledigt, aber mit umgekehrtem Vorzeichen**
+  (Abschnitt 21, revidiert in Abschnitt 22). Der Neutralitätstest ergab null
+  von 64 Bits; dieser Test kann eine überdimensionierte Ratemenge jedoch
+  grundsätzlich nicht erkennen (22.2). Mit aufgehobener Beschränkung auf
+  Nachrichtenbits gilt g\*(17) = 32: der Sprung **war** ein Messartefakt.
+- **Ratemengen über Zustandswörtern.** Abschnitt 22 hat die Beschränkung auf
+  W₀…W₇ aufgehoben und mit W₁₆…W₍ᵣ₋₁₎ 32 Bit je Runde gespart. Ob eine dritte
+  Wahl unter 32·(r−16) kommt, ist offen und mit demselben Werkzeug messbar.
 - **CDCL gegen Guess-and-Determine.** Abschnitt 20 misst
   Unit-Propagation. Ob Konfliktlernen die Kurve verschiebt, ist die offene
   Hälfte von 17.3 und braucht ein Solver-Binary.
@@ -1807,11 +1811,18 @@ Rateordnung wortweise, W₀ zuerst:
 > **g(r) = 32 · (r − 15) für 17 ≤ r ≤ 23**, ohne einen einzigen Ausreißer.
 > Wachstum exakt 32,0 Bit je Runde.
 
+> ⚠ **Korrigiert in Abschnitt 22.** Diese Zahl misst die Ratemenge *unter der
+> Beschränkung auf Nachrichtenbits W₀…W₇*. Ohne diese Beschränkung gilt
+> **g\*(r) = 32 · (r − 16)** — durchgehend 32 Bit weniger. Die Kurve unten ist
+> als Messwert korrekt und über Instanzen reproduzierbar, aber sie ist um
+> genau ein Wort zu hoch angesetzt.
+
 **Jede zusätzliche Runde kostet genau ein Nachrichtenwort.** Der
 Freiheitsverbrauch ist ganzzahlig in Wörtern, nicht ungefähr wortgroß.
 
 Bei r = 23 ist 2^g = 2²⁵⁶ erreicht — das Verfahren ist dort erschöpft. **Die
-strukturelle Reichweite endet bei r = 22.**
+strukturelle Reichweite endet bei r = 22.** (Korrigiert in 22.6: mit der
+uneingeschränkten Ratemenge endet sie erst bei **r = 23**.)
 
 ### 20.4 Gibt es eine kleinere Ratemenge?
 
@@ -1874,6 +1885,11 @@ Propagationsmaschine messbar, ohne externen Solver.
 
 ## 21. Neutrale Bits bei r = 17
 
+> ⚠ **Der Messwert dieses Abschnitts steht, seine Schlussfolgerung nicht.**
+> Abschnitt 22 zeigt, dass der hier verwendete Flip-Test eine zu groß
+> geratene Ratemenge grundsätzlich nicht erkennen kann, und beantwortet die
+> Ausgangsfrage mit anderem Werkzeug — mit gegenteiligem Ergebnis.
+
 Abschnitt 20 misst g(17) = 64: bei wortweiser Ratereihenfolge bestimmt
 Unit-Propagation den gesamten Rest des Systems erst, nachdem W₀ und W₁
 vollständig geraten sind. Offen blieb (Abschnitt 16), ob diese 64 Bits
@@ -1935,11 +1951,19 @@ das Nullergebnis in 21.2 ist damit keine Artefakt-Erklärung wert.
 neutral bezüglich Unit-Propagation — geprüft einzeln, an zehn unabhängigen
 Instanzen, ohne Ausnahme.
 
-Damit ist die in Abschnitt 16 offene Frage entschieden: **g(17) = 64 ist die
+~~Damit ist die in Abschnitt 16 offene Frage entschieden: **g(17) = 64 ist die
 tatsächliche Zahl, kein Messartefakt eines überdimensionierten Backdoors.**
 Der Sprung von 0 auf 64 zwischen r = 16 und r = 17 ist real; die glatte Rate
 von 32 Bit je Runde beginnt erst ab r = 17 → 18, nicht schon beim Übergang
-in die rundenreduzierte Nachrichtenexpansion hinein.
+in die rundenreduzierte Nachrichtenexpansion hinein.~~
+
+> **Diese Schlussfolgerung ist zurückgezogen (Abschnitt 22).** Satz K bleibt
+> als Messwert bestehen, trägt die Aussage aber nicht: der Flip-Test liefert
+> auch bei einer um 186 Bit zu großen Ratemenge null neutrale Bits (22.2).
+> Der Sprung von 0 auf 64 **war** ein Artefakt — nicht der Neutralität wegen,
+> sondern weil die Ratemenge auf Nachrichtenbits beschränkt war. Über den
+> Expansionswörtern gilt g\*(17) = 32, und die Rate von 32 Bit je Runde gilt
+> lückenlos ab r = 16 (22.5).
 
 **Reichweite der Aussage.** Geprüft ist Einzelbit-Neutralität — ob genau ein
 Bit bei sonst unveränderter Lösung geflippt werden kann. Nicht geprüft ist
@@ -1947,6 +1971,189 @@ gemeinsame Neutralität mehrerer Bits gleichzeitig (ein Paar könnte
 neutral sein, obwohl keines der beiden es einzeln ist). Nach Lehre 15
 (Propagationsgewinne kommen in Wortquanten, nicht bitweise) ist das kein
 naheliegender nächster Schritt, aber unbeauftragt logisch offen.
+
+---
+
+## 22. Revision der Messmethodik zu Abschnitt 20 und 21
+
+Anlass war ein Formunterschied, kein Rechenfehler: Die Kurve aus 20.3 wächst ab
+r = 18 mit exakt 32 Bit je Runde, springt aber beim Übergang r = 16 → 17 um 64.
+Abschnitt 21 hat genau diesen Verdacht geprüft und verworfen. Dieser Abschnitt
+prüft die beiden Messungen selbst nach. Werkzeug: `k1_gnd_revision.py`, dieselbe
+Propagationsmaschine, kein externer Solver.
+
+Ergebnis vorweg: **Der Verdacht war berechtigt, die Widerlegung in Abschnitt 21
+trägt nicht, und die Ursache liegt an einer dritten Stelle** — nicht in der
+Streuung, nicht in der Rücknahme-Logik, sondern in einer stillschweigenden
+Beschränkung der Ratemenge.
+
+### 22.1 Was reproduzierbar ist
+
+Erste Vermutung war Instanzstreuung: 20.3 und 21 nennen jeweils nur `seed = 0`.
+Nachgemessen über fünf Instanzen je Rundenzahl:
+
+| r | 16 | 17 | 18 | 19 | 20 | 21 | 22 |
+|---|---|---|---|---|---|---|---|
+| g(r), seeds 0–4 | 0 | 64 | 96 | 128 | 160 | 192 | 224 |
+
+Kein einziger abweichender Wert. **Die publizierte Kurve ist als Messwert
+korrekt und über Instanzen stabil.** Damit ist Streuung als Erklärung
+ausgeschlossen und der Verdacht muss der *Definition* der Messgröße gelten.
+
+### 22.2 Der Flip-Test aus 21.2 hat keine Trennschärfe
+
+Der Test aus 21.2 kippt je ein Bit der Ratemenge und fragt, ob die Propagation
+trotzdem konfliktfrei schließt. Dieser Test kann eine zu groß geratene Menge
+prinzipiell nicht erkennen:
+
+> Ist *S* ein starkes Backdoor bezüglich Unit-Propagation, so bestimmt die
+> Propagation aus **jeder** Belegung von *S* alles Übrige — oder sie meldet
+> Konflikt. Ein geflipptes Bit könnte also nur dann „neutral“ heißen, wenn zu
+> der geflippten Belegung ein **zweites Urbild** desselben Zielhashes gehört.
+> Der Erwartungswert dafür ist 2⁻⁶⁴ pro Flip.
+
+Null neutrale Bits sind damit exakt die Vorhersage des Nullmodells. Der Befund
+aus 21.2 ist nicht falsch — er ist ohne Aussagekraft, weil der Test unter jeder
+Hypothese dasselbe Ergebnis liefert.
+
+**Kontrolle, die das direkt zeigt.** Derselbe Flip-Test, angewandt auf eine
+nachweislich viel zu große Ratemenge (ebenenweise Rateordnung, 250 statt
+64 Bit — 186 Bit davon entbehrlich):
+
+| Seed | \|wortweise\| | \|ebenenweise\| | Flip-Test (wortweise) | Flip-Test (ebenenweise) |
+|---|---|---|---|---|
+| 0 | 64 | 250 | 0 | **0** |
+| 1 | 64 | 250 | 0 | **0** |
+| 2 | 64 | 250 | 0 | **0** |
+
+Der Test meldet auch bei 186 überflüssigen Bits null neutrale Bits.
+
+### 22.3 Die Positivkontrolle aus 21.3 prüft nichts
+
+21.3 begründet den Nullbefund damit, dass Bits *außerhalb* der Ratemenge beim
+Flippen zuverlässig einen Konflikt auslösen (60/60 Treffer). Instrumentiert man
+diesen Lauf, ergibt sich:
+
+> **Trail-Zuwachs je geflipptem Kontrollbit: 0. Propagationsschritte insgesamt: 0.**
+
+Nach vollständigem Raten ist jede Variable belegt; der „Konflikt“ entsteht schon
+in `enqueue()` an der Wertprüfung, bevor eine einzige Klausel angefasst wird.
+Geprüft wird also allein, dass `val()` eine belegte Variable erkennt — weder
+`mark`/`undo` noch die Propagation selbst. Die Kontrolle besteht mit derselben
+Sicherheit auch dann, wenn die Propagationsmaschine defekt wäre.
+
+### 22.4 Der Test, der die Frage beantwortet: leave-one-out
+
+Notwendigkeit misst man nicht durch Kippen, sondern durch **Weglassen**: Bit *i*
+gar nicht setzen und fragen, ob die Propagation trotzdem schließt.
+
+| Seed | Menge | Größe | entbehrliche Bits | Restoffenheit ohne je ein Bit |
+|---|---|---|---|---|
+| 0 | wortweise | 64 | **0** | 7.137 … 9.907 |
+| 0 | ebenenweise | 250 | **186** | 0 … 9.714 |
+| 1 | wortweise | 64 | **0** | 7.053 … 9.913 |
+| 1 | ebenenweise | 250 | **186** | 0 … 9.719 |
+
+Dieser Test erkennt die überdimensionierte Menge sofort und bestätigt die
+wortweise Menge als **einzeln-minimal**: kein einzelnes ihrer 64 Bits ist
+verzichtbar.
+
+### 22.5 Der eigentliche Fehler: die Ratemenge war beschränkt
+
+Einzeln-minimal ist nicht dasselbe wie kleinstmöglich. Abschnitt 20 hat g(r)
+ausschließlich über den 256 Nachrichtenbits W₀…W₇ gemessen — alle drei
+Rateordnungen in 20.4 variieren nur die *Reihenfolge* innerhalb dieser Menge,
+nie die Menge selbst. Guess-and-Determine darf aber jede Variable des Systems
+raten. Nächstliegende Alternative sind die Expansionswörter W₁₆…W₍ᵣ₋₁₎:
+
+| r | g(r) über W₀…W₇ | **g\*(r) über W₁₆…** | Ersparnis | Nachricht rekonstruiert | Nachrechnung trifft Ziel |
+|---|---|---|---|---|---|
+| 16 | 0 | **0** | 0 | ✓ | ✓ |
+| 17 | 64 | **32** | 32 | ✓ | ✓ |
+| 18 | 96 | **64** | 32 | ✓ | ✓ |
+| 19 | 128 | **96** | 32 | ✓ | ✓ |
+| 20 | 160 | **128** | 32 | ✓ | ✓ |
+| 21 | 192 | **160** | 32 | ✓ | ✓ |
+| 22 | 224 | **192** | 32 | ✓ | ✓ |
+| 23 | 256 | **224** | 32 | ✓ | ✓ |
+| 24 | 256 | 256 | 0 | ✓ | ✓ |
+
+Jede Zeile mit Korrektheitsprobe: aus der geschlossenen Propagation wird W₀…W₇
+ausgelesen, mit der Referenzimplementierung nachgerechnet und gegen den
+Zielhash geprüft — bitidentisch in allen Fällen. Stabil über vier Seeds.
+
+> **g\*(r) = 32 · (r − 16) für 16 ≤ r ≤ 23.**
+
+**Der Sprung bei r = 17 beträgt 32, nicht 64.** Die glatte Rate von 32 Bit je
+Runde gilt ohne Ausnahme ab r = 16 — genau das, was Abschnitt 21 vermutet und
+verworfen hatte.
+
+**Struktureller Grund, im Padding ablesbar.** Es ist W₉ = W₁₄ = 0, also
+
+> W₁₆ = σ₁(W₁₄) + W₉ + σ₀(W₁) + W₀ = **W₀ + σ₀(W₁)**
+
+(an 1000 Zufallsnachrichten nachgerechnet). Die 17. Runde fordert nur dieses
+eine 32-Bit-Aggregat an, nicht W₀ und W₁ einzeln. Wer wortweise rät, bezahlt
+32 Bit für Information, die die Runde nie anfordert. Ab r = 18 verschwindet der
+Effekt aus der *Rate*, weil W₀ und W₁ dann schon bezahlt sind — der Versatz von
+32 Bit bleibt aber im *Niveau* stehen. Genau daher der Formunterschied
+zwischen Sprunghöhe und Steigung.
+
+**Die Aufzählung ist erschöpfend.** σ₀ und σ₁ haben über GF(2) beide Rang 32,
+sind also bijektiv, und W₍₁₆₊ⱼ₎ enthält Wⱼ additiv. Die Abbildung
+(W₀…W₇) → (W₁₆…W₂₃) ist damit dreiecksförmig bijektiv: jeder aufgezählte
+Expansionsvektor ist erreichbar, 2^g\* zählt nichts doppelt und nichts umsonst.
+
+### 22.6 Korrekturen
+
+| Fundstelle | Aussage bisher | Korrektur |
+|---|---|---|
+| 20.3 | g(r) = 32(r − 15) | **g\*(r) = 32(r − 16)**; die alte Kurve gilt nur unter Beschränkung auf Nachrichtenbits |
+| 20.3 | Sprung 0 → 64 bei r = 17 | Sprung 0 → **32** |
+| 20.5 | strukturelle Reichweite endet bei r = 22 | endet bei **r = 23** (g\*(23) = 224 < 256, erschöpft erst bei r = 24) |
+| 20.5 | „um eine Runde zu gewinnen, müssen 32 Bit zurückgewonnen werden“ | unverändert gültig — die Rate war nie das Problem, nur das Niveau |
+| 21.4, Satz K | 0 von 64 Bits neutral, „g(17) = 64 ist die tatsächliche Zahl“ | Messwert bleibt, **Schlussfolgerung fällt**: der Test kann Überdimensionierung nicht erkennen (22.2) |
+| 21.4 | „der Sprung von 0 auf 64 ist real“ | **widerlegt** (22.5) |
+| 16 | „Neutrale Bits — erledigt“ | die dahinterstehende Frage war *nicht* entschieden; jetzt entschieden, mit umgekehrtem Vorzeichen |
+
+Satz J (Linearzeitlösbarkeit für r ≤ 16) ist nicht berührt; g\*(16) = 0
+bestätigt ihn zusätzlich.
+
+### 22.7 Was diese Korrektur nicht bedeutet
+
+Der Angriffsaufwand sinkt um Faktor 2³², die Reichweite wächst um eine Runde —
+beides ändert an der Gesamtlage nichts. 2²²⁴ Propagationsläufe bei r = 23 sind
+so unerreichbar wie 2²⁵⁶, und die Einschränkung aus Lehre 16 (erfüllbar
+konstruierte Instanzen, bekannte Lösung, keine Rückverfolgung) gilt für g\*
+unverändert. Der Wert der Revision liegt nicht in der kleineren Zahl, sondern
+darin, dass die Kurve jetzt **eine einzige Gerade ohne Knick** ist: ein Knick
+ohne strukturelle Erklärung war das eigentliche Warnsignal.
+
+**Weiterhin offen:** ob eine Ratemenge über noch anderen Variablen —
+Zustandswörtern statt Nachrichten- oder Expansionswörtern — unter
+32 · (r − 16) kommt. Diese Revision hat die Beschränkung auf W₀…W₇ aufgehoben,
+aber die Menge der geprüften Alternativen nicht ausgeschöpft.
+
+### 22.8 Zusätzliche methodische Lehren
+
+17. **Ein Test, der unter jeder Hypothese dasselbe sagt, ist kein Test.** Der
+   Flip-Test in 21.2 liefert null neutrale Bits, gleichgültig ob die Ratemenge
+   passend oder um 186 Bit zu groß ist. Vor der Messung ist zu prüfen, welches
+   Ergebnis die Gegenhypothese vorhersagt — hier: dasselbe.
+
+18. **Eine Positivkontrolle muss den fraglichen Mechanismus durchlaufen.** Die
+   Kontrolle in 21.3 sollte `mark`/`undo` und die Propagation absichern, löste
+   aber null Propagationsschritte aus. Kontrollen gehören instrumentiert, nicht
+   nur bestanden.
+
+19. **Freiheitsgrade zählt man an der Stelle, an der sie verbraucht werden.**
+   g(r) wurde über Nachrichtenbits gemessen, verbraucht wird Freiheit aber am
+   Expansionswort. Der Unterschied betrug hier genau ein Wort und erzeugte einen
+   Knick, der nach Struktur aussah und keine war.
+
+20. **Ein Knick ohne Mechanismus ist ein Messfehlerverdacht.** Sieben Punkte
+   auf einer Geraden und ein Ausreißer am Rand: die Erklärung lag nicht im
+   Objekt, sondern in der Messgröße.
 
 ---
 
@@ -2025,6 +2232,7 @@ validiert.
 | `k1_gnd_vollstaendig.py` | Korrektheitsprüfung, vollständige Kurve, wortweise gierig (20.3, 20.4) |
 | `k1_gnd_bitweise.py` | Bitweise gierige Suche mit Zufallskontrolle (20.4) |
 | `k1_neutral_bits.py` | Neutrale-Bits-Test bei r = 17, mit Positivkontrolle (Abschnitt 21) |
+| `k1_gnd_revision.py` | Methodikrevision zu 20/21: Seed-Stabilität, Trennschärfe des Flip-Tests, Leave-one-out, Ratemenge über Expansionswörtern (Abschnitt 22) |
 | `nachpruefung_saetze.py` | Nachrechnung Sätze 1–8, Ringstruktur, AND-minimale Formen (19.1) |
 | `nachpruefung_k1_1.py` | Nachrechnung K1-1 erschöpfend: Kollisionen, ANF, Nichtlinearität (19.1) |
 | `nachpruefung_struktur.py` | Nachrechnung Satz 2/6, RX-Konstanten, Minimalgewicht 467 (19.1) |
@@ -2073,6 +2281,13 @@ validiert.
 | Ebenenweiser Löser, Variante B3 | 256/256 exakt, 544 Inversionen |
 | Variante T: Urbild gefunden | 161 Knoten, 32 Ebenen |
 | Abwärtsreichweite nach 1 Rechtsrotation | 0 → 18–19 (Kosten 2¹⁶ → 2³⁰⁴) |
+| g(r) über Nachrichtenbits (20.3) | 32·(r−15), seeds 0–4 identisch |
+| **g\*(r) über Expansionswörtern (22.5)** | **32·(r−16), 16 ≤ r ≤ 23** |
+| Flip-Test auf 186 Bit zu großer Ratemenge (22.2) | 0 neutrale Bits — keine Trennschärfe |
+| Leave-one-out, wortweise Menge r = 17 (22.4) | 0 von 64 entbehrlich (einzeln-minimal) |
+| Leave-one-out, ebenenweise Menge r = 17 (22.4) | 186 von 250 entbehrlich |
+| Propagationsschritte der Positivkontrolle 21.3 (22.3) | **0** |
+| W₁₆ unter Bitcoin-Padding (22.5) | W₀ + σ₀(W₁), 1000 Fälle geprüft |
 | K1(r) für r ≤ 16 | in Linearzeit lösbar, null geratene Bits |
 | Breite des freien Schedule-Fensters | **16 Runden** |
 | Ratemenge g(r), 17 ≤ r ≤ 23 | **32 · (r − 15)**, exakt |
