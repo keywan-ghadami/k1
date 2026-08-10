@@ -1395,11 +1395,15 @@ Theoretische MITM- und Biclique-Preimages reichen bis etwa 45 Schritte, aber
 mit Komplexität knapp unter 2²⁵⁶ und damit ohne nennenswerten Gewinn
 gegenüber Brute Force.
 
-### 17.4 Die Prognose aus 9.11 messen
+### 17.4 ~~Die Prognose aus 9.11 messen~~ — erledigt (Abschnitt 22.4)
 
 Dort steht „null bis eine Runde" als erwarteter Effekt der kleineren CNF auf
-die erreichbare Rundenzahl. Mit 17.3 im Rücken ist das direkt messbar und wird
-zur Messung statt zur Schätzung.
+die erreichbare Rundenzahl. Gemessen über drei Verdrahtungsvarianten
+(198.167 bis 98.899 Gatter): Effekt **null Runden**, alle drei lösen r = 18,
+keine löst r = 19. Unerwarteter Nebenbefund: die Lösungszeit bei r = 18 ist
+invers zur Gatterzahl geordnet (kleinste Kodierung am langsamsten, Faktor
+6,1) — weder Gesamtgatterzahl noch AND-Zahl sagen CDCL-Schwierigkeit
+voraus.
 
 ### 17.5 Positionsvariante von K1-1
 
@@ -2060,11 +2064,72 @@ Messmethode.
 **Reichweite der Aussage.** Gemessen ist das Literatur-Modell `block`
 (freier Block), nicht das K1-spezifische Modell mit festem Padding und 256
 freien Bits. Ein Vergleich beider Modelle unter identischer
-Solver-Kalibrierung — die in 17.4 skizzierte Frage nach dem Effekt der
-kleineren K1-CNF auf die erreichbare Rundenzahl — ist damit technisch bereit
-(`k1_sat_kodierung.py` müsste dafür Abschnitt 5 auch für `modus="k1"` mit
-echtem Zufallsziel erzeugen, aktuell nur für `block`), aber noch nicht
-gemessen.
+Solver-Kalibrierung bleibt ein eigenständiger, noch offener Punkt (siehe
+Ende von 22.4) — zu unterscheiden von der Frage nach der **Gatterzahl** der
+Kodierung, die 22.4 direkt misst.
+
+### 22.4 Die Prognose aus 9.11 gemessen — und ein gegenläufiger Befund
+
+9.11 sagt für die kleinere CNF aus der Repräsentationswahl (Abschnitt 9.1:
+XAIG mit nativem XOR statt AIG-Zerlegung, 198.167 → 98.899 Gatter für 64
+Runden) einen Effekt von „null bis eine Runde" auf die erreichbare
+Rundenzahl voraus — Suchraum bleibt exponentiell. 17.3/17.4 machen daraus
+eine Messung statt einer Schätzung.
+
+**Aufbau.** `k1_cnf.py` ist um die in Abschnitt 9.1 katalogisierten
+Verdrahtungsvarianten parametrisiert (`xor_nativ`, `carry_variante`).
+Drei Varianten, alle im `block`-Modell mit echten Zufallszielen wie in
+22.2, gegen CaDiCaL, gleicher Timeout (600 s):
+
+| Variante | Gatter (64 R., aus 9.1) | Vars bei r=18 | Klauseln bei r=18 |
+|---|---|---|---|
+| `aig` (kein natives XOR) | 198.167 | 38.068 | 123.449 |
+| `xaig_andmin` (AND-minimaler Übertrag) | 106.606 | 27.013 | 101.075 |
+| `xaig_or` (bisherige Kodierung, = Abschnitt 22.2) | 98.899 | 16.486 | 69.494 |
+
+**Ergebnis:**
+
+| Variante | r=16 | r=17 | r=18 | r=19 |
+|---|---|---|---|---|
+| `aig` | 0,52 s | 1,34 s | **15,90 s** | TIMEOUT |
+| `xaig_andmin` | 0,31 s | 1,18 s | **75,70 s** | TIMEOUT |
+| `xaig_or` | 0,51 s | 1,35 s | **97,15 s** | TIMEOUT |
+
+(`k1_sat_variantenvergleich.py`, ein Zufallsziel je Zelle.)
+
+**Die erreichbare Rundenzahl ist bei allen drei Varianten identisch: r = 18
+lösbar, r = 19 nicht innerhalb 600 s.** Das bestätigt 9.11 schärfer als
+formuliert — nicht „null bis eine Runde", sondern **null Runden**,
+reproduzierbar über eine Gatterzahl-Spanne von 198.167 bis 98.899.
+
+**Der eigentliche Befund liegt woanders.** Bei r = 18 ist die Lösungszeit
+über die drei Varianten **exakt invers zur Gatterzahl geordnet**: die
+größte Kodierung (`aig`, 198.167 Gatter) ist mit 15,9 s die schnellste, die
+kleinste (`xaig_or`, 98.899 Gatter) mit 97,2 s die langsamste — Faktor 6,1
+in der der Erwartung entgegengesetzten Richtung. Weder Gesamtgatterzahl
+noch AND-Zahl (multiplikative Komplexität, für die kryptanalytisch
+eigentlich relevante Größe gehalten, vgl. 9.3/9.11) ordnen die
+Lösungszeiten korrekt: `xaig_andmin` hat weniger AND-Gatter als `aig`,
+löst aber langsamer; `xaig_andmin` hat mehr Gesamtgatter als `xaig_or`,
+löst aber schneller. Keine der beiden aus Abschnitt 9 bekannten
+Größen ist ein brauchbarer Prädiktor für CDCL-Schwierigkeit.
+
+**Plausible Ursache (nicht geprüft):** moderne CDCL-Solver wie CaDiCaL
+betreiben Inprocessing (u. a. Gate-Erkennung, gebundene
+Variablenelimination), das auf einer stärker zerlegten Kodierung (mehr,
+aber atomarere Tseitin-Variablen) mehr Angriffsfläche findet als auf einer
+bereits kompakten. Die kompakte Kodierung spart dem Solver also nicht
+Arbeit, sondern die Vorstufe, an der er selbst optimiert.
+
+**Reichweite der Aussage.** Eine Zufallsinstanz je Zelle, keine Wiederholung
+über Seeds — im Unterschied zur sonstigen Kontrollgruppen-Praxis des
+Dokuments (Lehre 1/4). Die Rundenzahl-Übereinstimmung (18/19 bei allen
+drei) ist robust, weil sie dreifach unabhängig reproduziert wurde; die
+exakte Zeit-Rangfolge und der Faktor 6,1 könnten teilweise
+instanzspezifisch sein und sollten vor einer stärkeren Aussage („kompaktere
+Kodierung ist für CDCL grundsätzlich nachteilig") über mehrere Seeds
+bestätigt werden. Offen bleibt zudem weiterhin der Vergleich `block` gegen
+`k1`-Modell (256 statt 512 freie Bits) unter dieser Kalibrierung.
 
 ---
 
@@ -2138,6 +2203,7 @@ validiert.
 | `k1_cnf.py` | Wiederverwendbarer CNF-Baustein der rundenreduzierten Kompression (20.1) |
 | `k1_sat_kodierung.py` | Kodierung, drei Korrektheitsnachweise, DIMACS-Export (20.1) |
 | `k1_sat_messlauf.py` | Messlauf gegen CaDiCaL/Kissat via PySAT, Exponentenanpassung (17.3, 22) |
+| `k1_sat_variantenvergleich.py` | Verdrahtungsvarianten (aig/xaig_or/xaig_andmin) gegen CDCL (17.4, 22.4) |
 | `k1_propagation.py` | Unit-Propagation mit zwei beobachteten Literalen, mit Rücknahme |
 | `k1_gnd_kurve.py` | Propagation ohne Raten, g(r) für drei Rateordnungen (20.2, 20.3) |
 | `k1_gnd_vollstaendig.py` | Korrektheitsprüfung, vollständige Kurve, wortweise gierig (20.3, 20.4) |
@@ -2202,3 +2268,5 @@ validiert.
 | CNF-Größe K1(18) / K1(64) | 15.058 / 71.480 Variablen |
 | Neutrale Einzelbits / Paare bei r = 17 | 0 von 64 / **0 von 20.160** |
 | CDCL-Reichweite (block-Modell, 600 s) | **r = 18** lösbar (109 s), r = 19 Timeout (CaDiCaL + Kissat) |
+| CDCL-Reichweite über 3 Kodierungsvarianten (198k–99k Gatter) | **r = 18 bei allen drei**, r = 19 keine |
+| Lösungszeit r=18, größte vs. kleinste Kodierung | 15,9 s vs. 97,2 s — **invers zur Gatterzahl** |
