@@ -95,10 +95,13 @@ def sha_ref(W16, r):
     return [(x+y) & M32 for x,y in zip([a,b,c,d,e,f,g,h], IV)]
 
 
-def baue(r, modus, W16_ref, ziel):
+def baue(r, modus, W16_ref, ziel, mit_W=False):
     """CNF fuer: r-rundige Kompression einer Nachricht == ziel.
     modus 'block' = 512 freie Bits, 'k1' = 256 freie Bits mit festem Padding.
-    Rueckgabe: (CNF, freie Literale in Reihenfolge W0.bit0 .. W7.bit31, H)"""
+    Rueckgabe: (CNF, freie Literale in Reihenfolge W0.bit0 .. W7.bit31, H).
+    Mit mit_W=True zusaetzlich die Wortliste W (auch die Expansionswoerter
+    W16..W(r-1)) als viertes Element - noetig, um Ratemengen zu untersuchen,
+    die nicht auf Nachrichtenbits beschraenkt sind."""
     F = CNF()
     if modus == "block":
         W = [F.wvar(W16_ref[i]) for i in range(16)]
@@ -124,4 +127,4 @@ def baue(r, modus, W16_ref, ziel):
     for i in range(8):
         for j in range(32):
             F.add(H[i][j] if (ziel[i] >> j) & 1 else -H[i][j])
-    return F, frei, H
+    return (F, frei, H, W) if mit_W else (F, frei, H)
