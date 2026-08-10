@@ -2070,6 +2070,18 @@ Kodierung, die 22.4 direkt misst.
 
 ### 22.4 Die Prognose aus 9.11 gemessen — und ein gegenläufiger Befund
 
+> **⚠ VORLÄUFIG — Schlussfolgerungen ausgesetzt (Stand: Verifikation läuft).**
+> Drei Messfehlerquellen sind identifiziert und noch nicht ausgeräumt:
+> (1) die r = 19-Werte sind **zensiert** (nur T > 600 s bekannt), aus
+> „alle brechen ab“ folgt keine Reichweitengleichheit; (2) die drei
+> Kodierungsvarianten entsprechen **nicht nachweislich** den Verdrahtungen
+> aus 9.1 — die gemessenen Größenverhältnisse weichen ab (`andmin`/`or`
+> gemessen 1,64 statt 1,08 laut 9.1), Ursache ist fehlendes strukturelles
+> Hashing und eine nicht zerlegte Maj in der `aig`-Variante; (3) je Zelle
+> nur **eine** Instanz gegen eine bekannt schwerschwänzige
+> Laufzeitverteilung. Die Rohdaten unten bleiben stehen, die Deutung ist
+> bis zum Abschluss der Verifikation zurückgezogen.
+
 9.11 sagt für die kleinere CNF aus der Repräsentationswahl (Abschnitt 9.1:
 XAIG mit nativem XOR statt AIG-Zerlegung, 198.167 → 98.899 Gatter für 64
 Runden) einen Effekt von „null bis eine Runde" auf die erreichbare
