@@ -670,6 +670,15 @@ K1 wurde vollständig auf Bitebene als And-Inverter-Graph (AIG) und als XAIG
 Die letzte Zeile ist nicht über die Gesamtzahl vergleichbar, sondern über die
 **AND-Zahl** — siehe 9.8.
 
+> **Korrektur (22.5).** Die Tabelle mischt zwei Quellen: die Zeilen „AIG-Basis"
+> und „XAIG (native XOR)" stammen aus `xaig.py`, die Zeile „AND-minimaler
+> Übertrag" aus `auftrag_1_2.py`. Beide Skripte bauen verschiedene Graphen,
+> die Zahlen sind daher **nicht untereinander vergleichbar**. In
+> `auftrag_1_2.py`s eigenem Rahmen misst die OR-Übertragsform 53.448 AND +
+> 53.769 XOR = **107.217** gegen 106.606 der AND-minimalen Form — diese ist
+> also nicht 8 % größer, sondern geringfügig kleiner. Die AND-Zahlen selbst
+> (49.265 bzw. 21.398) sind je für sich korrekt und unabhängig bestätigt.
+
 **Befund:** Rund die Hälfte aller Knoten sind XOR. Im reinen AIG kostet jedes
 XOR drei AND-Knoten, im XAIG einen. Die Halbierung folgt also aus der
 Repräsentationswahl, nicht aus Heuristik.
@@ -1320,6 +1329,27 @@ Kryptanalyse.
    gibt keine Rückverfolgung. g(r) ist deshalb eine untere Schranke für den
    Suchaufwand und keine Laufzeit. Das ist gewollt — aber es muss dabeistehen.
 
+17. **Eine einzelne SAT-Laufzeit ist kein Messwert.** Der erste Anlauf zu 22.4
+   verglich je eine Instanz je Zelle und leitete daraus eine Rangfolge ab. Bei
+   r = 18 streut dieselbe Kodierung über Instanzen um Faktor 32, während das
+   Maschinenrauschen bei 0,7–1,8 % liegt (22.5). Wiederholungsläufe auf
+   derselben Datei helfen nicht — sie messen nur das Rauschen. Nötig sind
+   viele Instanzen und eine Rangstatistik. Verschärfend: bei r = 17 ist die
+   Verteilung noch eng (Faktor 2–4); die Schwerschwänzigkeit entsteht erst
+   beim Übergang zu r = 18, also genau dort, wo gemessen wurde.
+
+18. **Zensierte Werte sind keine Gleichheit.** Aus „alle drei Varianten
+   erreichen bei r = 19 den Timeout" folgt nur T > 600 s für jede — nicht,
+   dass ihre Reichweite gleich ist. Ein Timeout ist eine Schranke, kein Wert;
+   wer ihn wie einen Messwert verrechnet, erzeugt Übereinstimmungen, die es
+   nicht gibt.
+
+19. **Varianten müssen beweisen, dass sie Varianten sind.** Drei Kodierungen
+   wurden als die Verdrahtungen aus 9.1 ausgegeben, ohne dass das geprüft war;
+   tatsächlich fehlten strukturelles Hashing und die Zerlegung der Maj (22.5).
+   Der Nachweis kostete wenig — Gatterzahlen gegen die Referenz und g(r) je
+   Variante — und hätte den ganzen Fehldurchgang erspart.
+
 ---
 
 ## 16. Offene, erreichbare Fragen
@@ -1351,12 +1381,13 @@ Kryptanalyse.
 - **Variante T mit schrittweise wiedereingesetzten Rechtsrotationen.** Die
   Reichweitentabelle in 18.8 sagt eine Klippe voraus. Direkt messbar wäre, ob
   ein Fensterlöser mit w+1 Ebenen die vorhergesagten Kosten trifft.
+- **r = 19 mit verifizierten Kodierungen.** Die einzige noch offene Hälfte von
+  17.4. Bisherige r = 19-Werte stammen aus fehlerhaften Kodierungen und waren
+  zensiert; ein Lauf mit deutlich größerem Zeitbudget würde die
+  Reichweitenfrage tatsächlich beantworten (22.4).
 - **Domänenwissen für CDCL.** Geprüft und nach Wert geordnet in
-  **Abschnitt 23**: Übertragsform-Effekt (23.1), Σ⁻¹-Klauseln (23.2),
-  Modell-Migration mit konstruierten Zielen (23.3).
-- **Ursache des Übertragsform-Effekts.** Zwei nahezu gleich große Kodierungen
-  unterscheiden sich bei r = 18 um Faktor 19,4 (23.1). Warum, ist offen —
-  derzeit der größte gemessene Hebel, vorbehaltlich der laufenden Verifikation.
+  **Abschnitt 23**: Σ⁻¹-Klauseln und Modell-Migration mit konstruierten
+  Zielen sind die tragfähigen Punkte.
 
 **Nicht erreichbar über diese Wege:** ein Angriff auf volles SHA-256 oder
 Bitcoin-Mining. Preimage-Attacken auf reduzierte Runden lassen sich nicht
@@ -1401,15 +1432,20 @@ Theoretische MITM- und Biclique-Preimages reichen bis etwa 45 Schritte, aber
 mit Komplexität knapp unter 2²⁵⁶ und damit ohne nennenswerten Gewinn
 gegenüber Brute Force.
 
-### 17.4 ~~Die Prognose aus 9.11 messen~~ — erledigt (Abschnitt 22.4)
+### 17.4 Die Prognose aus 9.11 messen — teilweise erledigt (Abschnitt 22.4)
 
 Dort steht „null bis eine Runde" als erwarteter Effekt der kleineren CNF auf
-die erreichbare Rundenzahl. Gemessen über drei Verdrahtungsvarianten
-(198.167 bis 98.899 Gatter): Effekt **null Runden**, alle drei lösen r = 18,
-keine löst r = 19. Unerwarteter Nebenbefund: die Lösungszeit bei r = 18 ist
-invers zur Gatterzahl geordnet (kleinste Kodierung am langsamsten, Faktor
-6,1) — weder Gesamtgatterzahl noch AND-Zahl sagen CDCL-Schwierigkeit
-voraus.
+die erreichbare Rundenzahl.
+
+**Für r = 18 beantwortet:** drei Verdrahtungsvarianten über eine Spanne von
+24.579 bis 48.119 Variablen lösen sämtlich durchgehend, und im gepaarten
+Test über 10 Instanzen und zwei Solver ist kein Zeitunterschied signifikant.
+Die Kodierungsgröße verschiebt nichts.
+
+**Offen bleibt r = 19.** Dafür existieren nur Messungen mit den vor der
+Verifikation fehlerhaften Kodierungen, und diese waren zensiert (Timeout).
+Die eigentliche Reichweitenfrage ist damit unbeantwortet; sie zu schließen
+kostet einen Lauf mit deutlich größerem Zeitbudget (22.5).
 
 ### 17.5 Positionsvariante von K1-1
 
@@ -1714,6 +1750,7 @@ Das Minimalgewicht 467 wird vom Einzelbit an Position 15 in W₀ erreicht.
 | Σ₀-Hexwert 0x20080400 | Tippfehler, Bit 29 statt 30 | korrigiert zu 0x40080400 in 7.4 und Messwerttabelle |
 | Satz 11, Zuordnung der Nichtlinearitäten | sortiert statt zugeordnet | Tabelle ergänzt |
 | Satz 9, Bereich 32.540–32.840 | Geltungsbereich zu weit angegeben | präzisiert |
+| Tabelle 9.1, Gesamtgatterzahlen | zwei Quellen (`xaig.py`, `auftrag_1_2.py`) in einer Tabelle verglichen | Hinweis in 9.1 ergänzt, Herleitung in 22.5 |
 
 Die Polynomschreibweise x³⁰ + x¹⁹ + x¹⁰ war stets korrekt, ebenso das Inverse
 0xcbd1a68d; `ring_analyse.py` rechnet mit `1<<30`. Betroffen war nur die
@@ -2074,80 +2111,118 @@ Solver-Kalibrierung bleibt ein eigenständiger, noch offener Punkt (siehe
 Ende von 22.4) — zu unterscheiden von der Frage nach der **Gatterzahl** der
 Kodierung, die 22.4 direkt misst.
 
-### 22.4 Die Prognose aus 9.11 gemessen — und ein gegenläufiger Befund
+### 22.4 Kodierungsvarianten: kein messbarer Effekt auf die CDCL-Schwierigkeit
 
-> **⚠ VORLÄUFIG — Schlussfolgerungen ausgesetzt (Stand: Verifikation läuft).**
-> Drei Messfehlerquellen sind identifiziert und noch nicht ausgeräumt:
-> (1) die r = 19-Werte sind **zensiert** (nur T > 600 s bekannt), aus
-> „alle brechen ab“ folgt keine Reichweitengleichheit; (2) die drei
-> Kodierungsvarianten entsprechen **nicht nachweislich** den Verdrahtungen
-> aus 9.1 — die gemessenen Größenverhältnisse weichen ab (`andmin`/`or`
-> gemessen 1,64 statt 1,08 laut 9.1), Ursache ist fehlendes strukturelles
-> Hashing und eine nicht zerlegte Maj in der `aig`-Variante; (3) je Zelle
-> nur **eine** Instanz gegen eine bekannt schwerschwänzige
-> Laufzeitverteilung. Die Rohdaten unten bleiben stehen, die Deutung ist
-> bis zum Abschluss der Verifikation zurückgezogen.
+Frage aus 9.11 und 17.4: Verschiebt eine kleinere CNF die erreichbare
+Rundenzahl? Prognose dort „null bis eine Runde", da der Suchraum
+exponentiell bleibt.
 
-9.11 sagt für die kleinere CNF aus der Repräsentationswahl (Abschnitt 9.1:
-XAIG mit nativem XOR statt AIG-Zerlegung, 198.167 → 98.899 Gatter für 64
-Runden) einen Effekt von „null bis eine Runde" auf die erreichbare
-Rundenzahl voraus — Suchraum bleibt exponentiell. 17.3/17.4 machen daraus
-eine Messung statt einer Schätzung.
+**Aufbau.** Drei Verdrahtungen aus Abschnitt 9.1, gebaut mit derselben
+CNF-Klasse (`k1_cnf.py`, Parameter `xor_nativ`/`carry_variante`/`hashing`/
+`assoz`). Dass die drei tatsächlich diese Verdrahtungen sind und dieselben
+Constraints kodieren, ist eigens nachgewiesen — siehe 22.5.
 
-**Aufbau.** `k1_cnf.py` ist um die in Abschnitt 9.1 katalogisierten
-Verdrahtungsvarianten parametrisiert (`xor_nativ`, `carry_variante`).
-Drei Varianten, alle im `block`-Modell mit echten Zufallszielen wie in
-22.2, gegen CaDiCaL, gleicher Timeout (600 s):
-
-| Variante | Gatter (64 R., aus 9.1) | Vars bei r=18 | Klauseln bei r=18 |
-|---|---|---|---|
-| `aig` (kein natives XOR) | 198.167 | 38.068 | 123.449 |
-| `xaig_andmin` (AND-minimaler Übertrag) | 106.606 | 27.013 | 101.075 |
-| `xaig_or` (bisherige Kodierung, = Abschnitt 22.2) | 98.899 | 16.486 | 69.494 |
-
-**Ergebnis:**
-
-| Variante | r=16 | r=17 | r=18 | r=19 |
+| Variante | Vars r=18 | Klauseln r=18 | AND (64 R.) | XOR (64 R.) |
 |---|---|---|---|---|
-| `aig` | 0,52 s | 1,34 s | **15,90 s** | TIMEOUT |
-| `xaig_andmin` | 0,31 s | 1,18 s | **75,70 s** | TIMEOUT |
-| `xaig_or` | 0,51 s | 1,35 s | **97,15 s** | TIMEOUT |
+| `aig` (kein natives XOR) | 48.119 | 143.075 | 214.643 | 0 |
+| `xaig_or` (OR-Übertrag) | 24.579 | 84.233 | 53.448 | 53.737 |
+| `xaig_andmin` (AND-minimaler Übertrag) | 24.745 | 91.977 | 21.398 | 85.659 |
 
-(`k1_sat_variantenvergleich.py`, ein Zufallsziel je Zelle.)
+**Messung.** Modell `block`, Zufallsziele, **10 unabhängige Instanzen**, jede
+von **beiden** Solvern gelöst (gepaart), streng sequenziell, Timeout 900 s.
+Kein einziger Wert zensiert, Höchstwert 616 s (`k1_v2_instanzvarianz.py`).
 
-**Die erreichbare Rundenzahl ist bei allen drei Varianten identisch: r = 18
-lösbar, r = 19 nicht innerhalb 600 s.** Das bestätigt 9.11 schärfer als
-formuliert — nicht „null bis eine Runde", sondern **null Runden**,
-reproduzierbar über eine Gatterzahl-Spanne von 198.167 bis 98.899.
+| Variante | Solver | min | Median | max |
+|---|---|---|---|---|
+| `aig` | CaDiCaL | 19,3 | 379,2 | 616,3 |
+| `xaig_or` | CaDiCaL | 14,5 | 111,1 | 493,1 |
+| `xaig_andmin` | CaDiCaL | 16,8 | 86,6 | 386,2 |
+| `aig` | Kissat | 17,1 | 36,8 | 86,5 |
+| `xaig_or` | Kissat | 3,6 | 35,3 | 154,8 |
+| `xaig_andmin` | Kissat | 11,7 | 69,3 | 133,4 |
 
-**Der eigentliche Befund liegt woanders.** Bei r = 18 ist die Lösungszeit
-über die drei Varianten **exakt invers zur Gatterzahl geordnet**: die
-größte Kodierung (`aig`, 198.167 Gatter) ist mit 15,9 s die schnellste, die
-kleinste (`xaig_or`, 98.899 Gatter) mit 97,2 s die langsamste — Faktor 6,1
-in der der Erwartung entgegengesetzten Richtung. Weder Gesamtgatterzahl
-noch AND-Zahl (multiplikative Komplexität, für die kryptanalytisch
-eigentlich relevante Größe gehalten, vgl. 9.3/9.11) ordnen die
-Lösungszeiten korrekt: `xaig_andmin` hat weniger AND-Gatter als `aig`,
-löst aber langsamer; `xaig_andmin` hat mehr Gesamtgatter als `xaig_or`,
-löst aber schneller. Keine der beiden aus Abschnitt 9 bekannten
-Größen ist ein brauchbarer Prädiktor für CDCL-Schwierigkeit.
+**Ergebnis: kein Kodierungseffekt.** Im gepaarten Vorzeichentest ist **kein
+einziger** Unterschied signifikant (alle p ≥ 0,109). Die beiden Solver
+widersprechen sich sogar in der Richtung: unter CaDiCaL schlägt `andmin` die
+`or`-Form in 7 von 10 Instanzen, unter Kissat ist es umgekehrt 7 von 10. Ein
+echter Kodierungseffekt wechselt nicht das Vorzeichen mit dem Solver.
 
-**Plausible Ursache (nicht geprüft):** moderne CDCL-Solver wie CaDiCaL
-betreiben Inprocessing (u. a. Gate-Erkennung, gebundene
-Variablenelimination), das auf einer stärker zerlegten Kodierung (mehr,
-aber atomarere Tseitin-Variablen) mehr Angriffsfläche findet als auf einer
-bereits kompakten. Die kompakte Kodierung spart dem Solver also nicht
-Arbeit, sondern die Vorstufe, an der er selbst optimiert.
+**Was den Unterschied stattdessen erklärt: Instanzvarianz.** Bei
+*identischer* Kodierung streut `aig` unter CaDiCaL von 19,3 s bis 616,3 s —
+**Faktor 32**. Die Verteilung ist schwerschwänzig, und zwar erst ab r = 18:
+bei r = 17 liegt die Spanne über 60 Instanzen nur bei Faktor 2–4 (22.5).
+Zum Vergleich das Maschinenrauschen bei unveränderter Eingabe: **0,7–1,8 %**.
 
-**Reichweite der Aussage.** Eine Zufallsinstanz je Zelle, keine Wiederholung
-über Seeds — im Unterschied zur sonstigen Kontrollgruppen-Praxis des
-Dokuments (Lehre 1/4). Die Rundenzahl-Übereinstimmung (18/19 bei allen
-drei) ist robust, weil sie dreifach unabhängig reproduziert wurde; die
-exakte Zeit-Rangfolge und der Faktor 6,1 könnten teilweise
-instanzspezifisch sein und sollten vor einer stärkeren Aussage („kompaktere
-Kodierung ist für CDCL grundsätzlich nachteilig") über mehrere Seeds
-bestätigt werden. Offen bleibt zudem weiterhin der Vergleich `block` gegen
-`k1`-Modell (256 statt 512 freie Bits) unter dieser Kalibrierung.
+**Zur Prognose aus 9.11.** Alle drei Kodierungen lösen r = 18 durchgehend,
+über eine Spanne von 24.579 bis 48.119 Variablen. Für r = 18 ist die
+Prognose damit bestätigt: die Kodierungsgröße verschiebt nichts. **Offen
+bleibt r = 19** — dort liegen nur Messungen mit den fehlerhaften Kodierungen
+von vor der Verifikation vor, und diese waren zensiert (Timeout 600 s). 17.4
+ist also für r = 18 beantwortet, für die eigentliche Reichweitenfrage nicht.
+
+**Kein Prädiktor in Sicht.** Weder Gesamtgröße noch AND-Zahl
+(multiplikative Komplexität, vgl. 9.3) ordnen die Laufzeiten — sie ordnen
+gar nichts, weil es nichts zu ordnen gibt: die Streuung zwischen Instanzen
+derselben Kodierung übersteigt die Unterschiede zwischen den Kodierungen um
+mehr als eine Größenordnung.
+
+**Reichweite der Aussage.** Bei dieser Streuung hat n = 10 wenig
+Trennschärfe. „Nicht signifikant" heißt hier **nicht** „kein Effekt
+existiert", sondern: ein Effekt in der Größenordnung, die die Vormessung
+nahegelegt hatte (Faktor 6 bis 19), existiert nicht. Ein kleiner Effekt
+(Faktor < 2) wäre mit diesem Aufwand nicht auffindbar und bleibt offen.
+
+### 22.5 Verifikationskette — warum der erste Anlauf verworfen wurde
+
+Ein erster Durchgang zu 22.4 hatte je Zelle **eine** Instanz einmal gelöst
+und daraus eine Rangfolge abgeleitet: Lösungszeit invers zur Gatterzahl
+geordnet, die kleinste Kodierung am langsamsten (Faktor 6,1). Diese Aussage
+ist **zurückgezogen**. Vier Prüfungen, in dieser Reihenfolge:
+
+**V6 — Sind die Varianten, was sie behaupten?** Nein, im ersten Anlauf nicht.
+`k1_cnf.CNF` hatte kein strukturelles Hashing (identische Teilausdrücke
+erzeugten mehrfach Variablen), die `aig`-Variante zerlegte nur XOR und ließ
+die Maj als monolithisches Tseitin-Gatter stehen, und die Additionsketten
+waren anders geklammert als in der Referenz. Nach Behebung (alles opt-in,
+Vorgabewerte reproduzieren die CNF der Abschnitte 20/21 bitgenau):
+
+| Prüfung | Ergebnis |
+|---|---|
+| AND-Zahlen gegen `auftrag_1_2.py`, r = 1, 2, 4, 16, 32, 64 | **exakt gleich**, beide Varianten |
+| XOR-Zahlen | konstant −32 (`or`), ≤ 0,53 % (`andmin`) |
+| g(17) je Variante, Modell k1 | **64**, wie die Vorgabe → propagationsäquivalent |
+| Semantik | 18/18 Instanzen korrekt, null unerfüllte Klauseln |
+
+**V1 — Maschinenrauschen.** Dieselbe Datei mehrfach, gleicher Solver:
+Streuung **0,7–1,8 %**. Zeitmessung ist präzise; Wiederholungsläufe waren
+nie die Fehlerquelle.
+
+**V2 — Verteilung bei r = 17.** 60 Instanzen, beide Solver, gepaart.
+Die Verteilung ist dort **eng** (Spanne Faktor 2–4, keine Ausreißer, keine
+Timeouts). `aig` ist zuverlässig langsamer (46/60 bzw. 51/60, p bis
+3·10⁻⁸, bei beiden Solvern gleichgerichtet), aber nur um Faktor ≈ 1,4;
+davon gehen 7–10 % auf das Einlesen der größeren Datei. Zwischen `or` und
+`andmin` liegt der Medianfaktor bei 1,06 bzw. 1,26 — an der Nachweisgrenze.
+
+**V3 — Verteilung bei r = 18.** Die Messung in 22.4. Hier ist die Verteilung
+schwerschwänzig (Faktor 32 bei identischer Kodierung), und nichts bleibt
+signifikant.
+
+**Der entscheidende Punkt.** Zwischen r = 17 und r = 18 ändert sich nicht nur
+die Höhe, sondern die **Natur** der Laufzeitverteilung: von eng und
+gutartig zu schwerschwänzig. Genau deshalb war die Einzelinstanz-Messung
+wertlos — sie fiel in den Bereich, in dem eine einzelne Ziehung
+größenordnungsweit danebenliegen kann.
+
+**Nebenbefund: Abschnitt 9.1 mischt zwei Quellen.** Die Zeilen „AIG-Basis"
+(198.167) und „XAIG, native XOR" (98.899 = 49.265 AND + 49.634 XOR) stammen
+aus `xaig.py`; die Zeile „AND-minimaler Übertrag" (106.606 = 21.398 + 85.208)
+aus `auftrag_1_2.py`. Beide Skripte bauen verschiedene Graphen. In
+`auftrag_1_2.py`s eigenem, konsistentem Rahmen ist die OR-Form **107.217**
+groß und die AND-minimale **106.606** — die AND-minimale Form ist also nicht
+8 % größer, sondern geringfügig kleiner. Die Gegenüberstellung 98.899 gegen
+106.606 in 9.1 vergleicht zwei verschiedene Bauweisen und trägt die dort
+gezogene Folgerung nicht.
 
 ---
 
@@ -2157,20 +2232,7 @@ Aus einem externen Vorschlag zur Injektion von Vorabwissen, hier auf die
 tragfähigen Teile eingedampft. **Nichts davon ist gemessen.** Nach Wert
 geordnet.
 
-### 23.1 Übertragsform: den vorhandenen Hebel verstehen
-
-`xaig_or` und `xaig_andmin` sind praktisch gleich groß (+0,7 % Variablen) und
-unterschieden sich in der Vormessung bei r = 18 um Faktor 19,4 — allein durch
-die **Übertragsform**. Das ist der größte bislang gemessene Einzeleffekt, und
-er entsteht ohne jede Wissensinjektion.
-
-Offen: warum wirkt `and_minimal` so stark, und lässt sich die Richtung
-weitertreiben (andere Übertragsformen, gemischte Formen je Rundenbereich)?
-Voraussetzung ist der Abschluss der laufenden Verifikation zu 22.4 — solange
-unklar ist, welcher Teil des Faktors die Instanzvarianz überlebt, fehlt die
-Basislinie.
-
-### 23.2 Σ⁻¹ als redundante Klauseln
+### 23.1 Σ⁻¹ als redundante Klauseln
 
 Der substanzielle Punkt des Vorschlags, mit einem Argument, das dort nicht
 genannt wird: **Unit-Propagation kann ein XOR-lineares System prinzipiell
@@ -2186,7 +2248,7 @@ Prinzipientreue Alternative für dieselbe Sache: **CryptoMiniSat mit nativen
 XOR-Klauseln und Gauß-Jordan-Elimination**. Im vorhandenen PySAT-Build fehlt
 es (`cms_present: False`), Nachinstallation ungeprüft.
 
-### 23.3 Modell-Migration `block` → `k1`
+### 23.2 Modell-Migration `block` → `k1`
 
 Messung mit 256 statt 512 freien Bits; steht bereits am Ende von 22.4 als
 offener Punkt und ist mit vorhandener Infrastruktur billig.
@@ -2204,7 +2266,7 @@ Konstanten ein, die bei der Konstruktion wegfalten — stärker als die
 vorgeschlagenen Unit-Klauseln. Die affine Runde 0 faltet aus demselben Grund
 bereits automatisch weg.
 
-### 23.4 Wortweise Verzweigung (Stretch)
+### 23.3 Wortweise Verzweigung (Stretch)
 
 Gut begründet aus eigenen Daten: Abschnitt 20.4 misst, dass
 Propagationsgewinne in Wortquanten anfallen und bitweise gierige Auswahl mit
@@ -2218,7 +2280,7 @@ per `solve(assumptions=…)`; bei erfüllbaren Instanzen zahlt sich das
 sequentiell meist nicht aus, der Gewinn entsteht üblicherweise erst durch
 Parallelisierung.
 
-### 23.5 Verworfen
+### 23.4 Verworfen
 
 - **GF(2)-Relationen der Nachrichtenexpansion als Klauseln.** Nicht
   implizierbar: die echte Expansion ist nicht GF(2)-linear (Abschnitt 11,
@@ -2302,7 +2364,10 @@ validiert.
 | `k1_cnf.py` | Wiederverwendbarer CNF-Baustein der rundenreduzierten Kompression (20.1) |
 | `k1_sat_kodierung.py` | Kodierung, drei Korrektheitsnachweise, DIMACS-Export (20.1) |
 | `k1_sat_messlauf.py` | Messlauf gegen CaDiCaL/Kissat via PySAT, Exponentenanpassung (17.3, 22) |
-| `k1_sat_variantenvergleich.py` | Verdrahtungsvarianten (aig/xaig_or/xaig_andmin) gegen CDCL (17.4, 22.4) |
+| `k1_sat_variantenvergleich.py` | Erster, verworfener Variantenvergleich — je eine Instanz (22.5) |
+| `k1_kodierung_verifikation.py` | Kodierungstreue: Gatterzahlen gegen 9.1, g(r), Rückwärtskompatibilität (22.5, V6) |
+| `k1_v1_rauschen.py` | Maschinenrauschen bei unveränderter Eingabe (22.5, V1) |
+| `k1_v2_instanzvarianz.py` | Instanzvarianz, gepaart über zwei Solver, Vorzeichentest (22.4, 22.5) |
 | `k1_propagation.py` | Unit-Propagation mit zwei beobachteten Literalen, mit Rücknahme |
 | `k1_gnd_kurve.py` | Propagation ohne Raten, g(r) für drei Rateordnungen (20.2, 20.3) |
 | `k1_gnd_vollstaendig.py` | Korrektheitsprüfung, vollständige Kurve, wortweise gierig (20.3, 20.4) |
@@ -2367,5 +2432,8 @@ validiert.
 | CNF-Größe K1(18) / K1(64) | 15.058 / 71.480 Variablen |
 | Neutrale Einzelbits / Paare bei r = 17 | 0 von 64 / **0 von 20.160** |
 | CDCL-Reichweite (block-Modell, 600 s) | **r = 18** lösbar (109 s), r = 19 Timeout (CaDiCaL + Kissat) |
-| CDCL-Reichweite über 3 Kodierungsvarianten (198k–99k Gatter) | **r = 18 bei allen drei**, r = 19 keine |
-| Lösungszeit r=18, größte vs. kleinste Kodierung | 15,9 s vs. 97,2 s — **invers zur Gatterzahl** |
+| Kodierungseffekt auf CDCL-Zeit, r = 18, 10 gepaarte Instanzen | **keiner signifikant** (alle p ≥ 0,109), Solver widersprechen sich in der Richtung |
+| Instanzvarianz r = 18 bei identischer Kodierung | **Faktor 32** (19,3–616,3 s) |
+| Instanzvarianz r = 17, 60 Instanzen | Faktor 2–4 (eng, keine Ausreißer) |
+| Maschinenrauschen bei unveränderter Eingabe | **0,7–1,8 %** |
+| AND-Zahl der Varianten gegen `auftrag_1_2.py`, r = 1…64 | **exakt gleich** (Kodierungstreue nachgewiesen) |
