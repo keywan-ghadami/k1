@@ -1351,12 +1351,11 @@ Kryptanalyse.
 - **Variante T mit schrittweise wiedereingesetzten Rechtsrotationen.** Die
   Reichweitentabelle in 18.8 sagt eine Klippe voraus. Direkt messbar wäre, ob
   ein Fensterlöser mit w+1 Ebenen die vorhergesagten Kosten trifft.
-- **Domänenwissen-Injektion für CDCL.** Externer Vorschlag, geprüft und
-  priorisiert in **Abschnitt 23**. Tragfähig sind die Σ⁻¹-Klauseln (23.3 b)
-  und die Modell-Migration mit konstruierten Zielen (23.1); ein Punkt des
-  Vorschlags ist unsound und darf nicht ausgeführt werden (23.3 a).
+- **Domänenwissen für CDCL.** Geprüft und nach Wert geordnet in
+  **Abschnitt 23**: Übertragsform-Effekt (23.1), Σ⁻¹-Klauseln (23.2),
+  Modell-Migration mit konstruierten Zielen (23.3).
 - **Ursache des Übertragsform-Effekts.** Zwei nahezu gleich große Kodierungen
-  unterscheiden sich bei r = 18 um Faktor 19,4 (23.4). Warum, ist offen —
+  unterscheiden sich bei r = 18 um Faktor 19,4 (23.1). Warum, ist offen —
   derzeit der größte gemessene Hebel, vorbehaltlich der laufenden Verifikation.
 
 **Nicht erreichbar über diese Wege:** ein Angriff auf volles SHA-256 oder
@@ -2152,131 +2151,84 @@ bestätigt werden. Offen bleibt zudem weiterhin der Vergleich `block` gegen
 
 ---
 
-## 23. Vorgeschlagene Folgeuntersuchungen: Domänenwissen-Injektion für CDCL
+## 23. Folgeuntersuchungen: Domänenwissen für CDCL
 
-Externer Vorschlag (nicht aus diesem Projekt), hier festgehalten samt Prüfung
-gegen den vorhandenen Messstand. **Nichts davon ist gemessen** — dieser
-Abschnitt sammelt Vorhaben und ihre Bewertung, keine Ergebnisse.
+Aus einem externen Vorschlag zur Injektion von Vorabwissen, hier auf die
+tragfähigen Teile eingedampft. **Nichts davon ist gemessen.** Nach Wert
+geordnet.
 
-**Kernhypothese des Vorschlags.** CDCL scheitere ab r = 19 nicht primär an der
-Suchraumgröße, sondern an struktureller Blindheit: der Solver müsse
-kryptographische Makro-Eigenschaften durch teure Konfliktanalyse auf Bitebene
-neu erlernen. Gezielte Injektion von algebraischem und topologischem
-Vorabwissen verschiebe die Lösbarkeitsgrenze.
+### 23.1 Übertragsform: den vorhandenen Hebel verstehen
 
-**Zur Einordnung der Hypothese.** Sie ist nicht abwegig: der in 22.4
-gemessene Unterschied zwischen zwei nahezu gleich großen Kodierungen zeigt,
-dass etwas anderes als die rohe Instanzgröße die Laufzeit dominiert. Sie
-stützt sich allerdings ausdrücklich auf das „Laufzeit-Paradoxon" aus 22.4,
-das derzeit **zurückgezogen** ist (siehe Warnhinweis dort); die dortigen
-Zahlen stammen aus fehlerhaft gebauten Kodierungen.
+`xaig_or` und `xaig_andmin` sind praktisch gleich groß (+0,7 % Variablen) und
+unterschieden sich in der Vormessung bei r = 18 um Faktor 19,4 — allein durch
+die **Übertragsform**. Das ist der größte bislang gemessene Einzeleffekt, und
+er entsteht ohne jede Wissensinjektion.
 
-### 23.1 Modell-Migration `block` → `k1`
+Offen: warum wirkt `and_minimal` so stark, und lässt sich die Richtung
+weitertreiben (andere Übertragsformen, gemischte Formen je Rundenbereich)?
+Voraussetzung ist der Abschluss der laufenden Verifikation zu 22.4 — solange
+unklar ist, welcher Teil des Faktors die Instanzvarianz überlebt, fehlt die
+Basislinie.
 
-Messung mit 256 statt 512 freien Bits. Steht bereits am Ende von 22.4 als
+### 23.2 Σ⁻¹ als redundante Klauseln
+
+Der substanzielle Punkt des Vorschlags, mit einem Argument, das dort nicht
+genannt wird: **Unit-Propagation kann ein XOR-lineares System prinzipiell
+nicht invertieren** — dafür wäre Gauß-Elimination nötig, die kein
+CDCL-Solver von sich aus ausführt. Gegeben alle 32 Ausgabebits von Σ₀ leitet
+UP kein einziges Eingabebit ab, obwohl die Abbildung bijektiv ist.
+
+Klauseln für die Rückrichtung sind logisch **impliziert**, also sicher, aber
+propagatorisch **neu**. Die Inversen liegen aus Abschnitt 8 bereits vor
+(Σ₀⁻¹ = 0xcbd1a68d, Σ₁⁻¹ = 0x6ab84f6c), der Aufwand ist gering.
+
+Prinzipientreue Alternative für dieselbe Sache: **CryptoMiniSat mit nativen
+XOR-Klauseln und Gauß-Jordan-Elimination**. Im vorhandenen PySAT-Build fehlt
+es (`cms_present: False`), Nachinstallation ungeprüft.
+
+### 23.3 Modell-Migration `block` → `k1`
+
+Messung mit 256 statt 512 freien Bits; steht bereits am Ende von 22.4 als
 offener Punkt und ist mit vorhandener Infrastruktur billig.
 
-**Zwei Korrekturen am Vorschlag:**
+**Bedingung:** mit konstruierten Zielen rechnen (Hash einer bekannten
+Nachricht). Im `block`-Modell existiert ein Urbild mit überwältigender
+Wahrscheinlichkeit, alle Instanzen sind praktisch sicher SAT. Bei 256 freien
+Bits gegen 256 Bedingungen liegt die Existenzwahrscheinlichkeit dagegen bei
+≈ 63 % — ein erheblicher Teil zufälliger Ziele wird UNSAT, und Widerlegung
+ist typischerweise um Größenordnungen teurer. Sonst misst man den Wechsel des
+Instanztyps statt den Effekt der Suchraumverkleinerung.
 
-- **Das Padding ist bereits stärker kodiert als vorgeschlagen.** Der Vorschlag
-  will W₈…W₁₅ „hart als 256 Unit-Klauseln injizieren". `baue(..., modus="k1")`
-  setzt sie als **Konstanten** ein, die bei der Konstruktion wegfalten — es
-  entstehen weder Variablen noch Gatter. Unit-Klauseln wären ein Rückschritt,
-  weil der Solver sie erst propagieren müsste. Dasselbe gilt für das
-  vorgeschlagene „Vorberechnen der affinen Runde 0": Konstantenfaltung
-  erledigt das automatisch, da IV und Kₜ Konstanten sind.
-- **Instanztyp-Falle.** Im `block`-Modell (512 freie Bits gegen 256
-  Bedingungen) existiert ein Urbild mit überwältigender Wahrscheinlichkeit,
-  alle Instanzen sind praktisch sicher SAT. Im `k1`-Modell mit 256 freien
-  Bits gegen 256 Bedingungen liegt die Erwartung bei genau einem Urbild, die
-  Existenzwahrscheinlichkeit bei ≈ 63 %. Ein erheblicher Teil zufälliger
-  Ziele wird **UNSAT**, und Widerlegung ist typischerweise um Größenordnungen
-  teurer als ein Treffer. Ohne konstruierte Ziele (Hash einer bekannten
-  Nachricht) misst man den Wechsel des Instanztyps, nicht den Effekt der
-  Suchraumverkleinerung.
+Kein Handlungsbedarf beim Padding: `baue(..., modus="k1")` setzt W₈…W₁₅ als
+Konstanten ein, die bei der Konstruktion wegfalten — stärker als die
+vorgeschlagenen Unit-Klauseln. Die affine Runde 0 faltet aus demselben Grund
+bereits automatisch weg.
 
-**Bewertung: sinnvoll, billig, aber nur mit konstruierten Zielen — oder mit
-getrennter Auswertung nach SAT und UNSAT.**
+### 23.4 Wortweise Verzweigung (Stretch)
 
-### 23.2 Erzwungene Verzweigungsreihenfolge (wortweise W₀…W₇)
+Gut begründet aus eigenen Daten: Abschnitt 20.4 misst, dass
+Propagationsgewinne in Wortquanten anfallen und bitweise gierige Auswahl mit
+73 statt 64 Bit schlechter ist. Dass eine wortweise erzwungene Verzweigung
+VSIDS schlagen könnte, ist damit nicht spekulativ.
 
-**Begründung ist die stärkste des Vorschlags**, weil sie aus eigenen Daten
-kommt: Abschnitt 20.4 misst, dass Propagationsgewinne in Wortquanten
-anfallen und bitweise gierige Auswahl mit 73 statt 64 Bit nachweislich
-schlechter ist. Dass eine wortweise erzwungene Verzweigung VSIDS schlagen
-könnte, ist damit begründet und nicht spekulativ.
+Werkzeuglage ungünstig: PySAT bietet keine Überschreibung der
+Entscheidungsreihenfolge (`set_phases()` setzt nur die Polarität).
+Approximierbar allein über **Cube-and-Conquer** über die oberen Bits von W₀
+per `solve(assumptions=…)`; bei erfüllbaren Instanzen zahlt sich das
+sequentiell meist nicht aus, der Gewinn entsteht üblicherweise erst durch
+Parallelisierung.
 
-**Aber so nicht implementierbar.** PySAT bietet keine Überschreibung der
-Entscheidungsreihenfolge; `set_phases()` setzt nur die Polarität, und
-CaDiCaL/Kissat exponieren keine Ordnungs-API. Approximierbar allein über
-**Cube-and-Conquer** (Präfix-Aufteilung über die oberen Bits von W₀ per
-`solve(assumptions=…)`). Einschränkung: bei erfüllbaren Instanzen kostet
-sequentielles Cube-and-Conquer meist mehr als es bringt, weil erfolglose
-Cubes vor dem treffenden abgearbeitet werden; der Gewinn entsteht
-üblicherweise erst durch Parallelisierung.
+### 23.5 Verworfen
 
-**Bewertung: Stretch-Ziel, nicht Kernexperiment.**
-
-### 23.3 Redundante Klauseln — ein Punkt davon ist unsound
-
-**(a) GF(2)-Relationen der Nachrichtenexpansion injizieren — NICHT AUSFÜHREN.**
-
-> ⚠ Dieser Vorschlag würde die Messung ungültig machen. Abschnitt 11 stellt im
-> ersten Satz fest: die echte Expansion nutzt modulare Addition und ist
-> **nicht** GF(2)-linear; die Linearisierung ersetzt + durch ⊕. Diese
-> Relationen sind daher **keine Implikationen des echten Systems**. Als
-> Klauseln injiziert schneiden sie gültige Lösungen weg — aus einer
-> SAT-Instanz kann eine UNSAT-Instanz werden, und der Solver „gewinnt" Zeit
-> durch eine falsche Antwort. Abschnitt 18.4 hat zudem gemessen, dass die
-> Linearisierung nichts trägt: 128,4 von 256 Padding-Bits gegen 127,7 bei
-> reinem Raten.
-
-**(b) Inverse der Σ-Schichten explizit kodieren — der beste Punkt des
-Vorschlags.** Tragender Grund, den der Vorschlag selbst nicht nennt:
-Unit-Propagation kann ein XOR-lineares System **prinzipiell nicht**
-invertieren, dafür wäre Gauß-Elimination nötig, die kein CDCL-Solver von sich
-aus ausführt. Gegeben alle 32 Ausgabebits von Σ₀ leitet UP kein einziges
-Eingabebit ab, obwohl die Abbildung bijektiv ist (Abschnitt 8: Rang 32/32,
-Inverse 0xcbd1a68d und 0x6ab84f6c liegen bereits vor). Klauseln für die
-Rückrichtung sind logisch **impliziert** — also sicher — aber propagatorisch
-**neu**. Echter Gewinn möglich, geringer Aufwand.
-
-Das prinzipientreue Werkzeug für dieselbe Sache wäre **CryptoMiniSat mit
-nativen XOR-Klauseln und Gauß-Jordan-Elimination**; im vorhandenen
-PySAT-Build fehlt es (`cms_present: False`), Nachinstallation ungeprüft.
-
-**(c) Carry-Bounding-Klauseln — vermutlich wirkungslos.** Abschnitt 20.1 hat
-verifiziert, dass die Kodierung vorwärts **propagationsvollständig** ist: mit
-fixierten Nachrichtenbits bestimmt reine UP alle 15.058 Variablen. Daran
-können zusätzliche Übertragsklauseln nichts verbessern. Ein Gewinn wäre
-allenfalls bei partiellen Belegungen denkbar und müsste gemessen statt
-behauptet werden.
-
-### 23.4 Der stärkere Hebel liegt bereits vor
-
-Unabhängig vom Vorschlag: `xaig_or` und `xaig_andmin` sind praktisch gleich
-groß (+0,7 % Variablen) und unterschieden sich in der Vormessung bei r = 18
-um Faktor 19,4 — allein durch die **Übertragsform**. Das ist genau der
-Effekt, den 23.3 durch Wissensinjektion sucht, hier aber ohne jede Injektion
-vorhanden. Die Frage „warum wirkt `and_minimal` so stark, und lässt sich das
-weitertreiben" ist konkreter fundiert als die spekulativen Punkte oben —
-vorbehaltlich der laufenden Verifikation, ob der Faktor die Instanzvarianz
-überlebt.
-
-### 23.5 Priorisierung
-
-| Rang | Vorhaben | Begründung |
-|---|---|---|
-| 1 | Ursache des Übertragsform-Effekts (23.4) | eigener Befund, größter gemessener Hebel |
-| 2 | Σ⁻¹-Klauseln (23.3 b) | sound, billig, propagatorisch nachweislich neu |
-| 3 | Modell-Migration (23.1) | billig, aber nur mit konstruierten Zielen |
-| 4 | Cube-and-Conquer (23.2) | gut begründet, Werkzeuglage ungünstig |
-| — | GF(2)-Injektion (23.3 a) | **nicht ausführen**, unsound |
-
-Alle Punkte setzen den Abschluss der laufenden Verifikation zu 22.4 voraus:
-solange nicht feststeht, welche Zeitunterschiede die Instanzvarianz
-überleben, gibt es keine belastbare Basislinie, gegen die ein Einzeldelta
-gemessen werden könnte.
+- **GF(2)-Relationen der Nachrichtenexpansion als Klauseln.** Nicht
+  implizierbar: die echte Expansion ist nicht GF(2)-linear (Abschnitt 11,
+  erster Satz), die Linearisierung ersetzt + durch ⊕. Solche Klauseln
+  schneiden gültige Lösungen weg und können SAT in UNSAT verwandeln. 18.4
+  misst zudem, dass die Linearisierung nichts trägt (128,4 gegen 127,7 von
+  256 Bits).
+- **Carry-Bounding-Klauseln.** Abschnitt 20.1 hat die Kodierung als vorwärts
+  propagationsvollständig verifiziert; zusätzliche Übertragsklauseln können
+  daran nichts verbessern.
 
 ---
 
