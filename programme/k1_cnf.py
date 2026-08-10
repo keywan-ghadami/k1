@@ -171,11 +171,14 @@ def sha_ref(W16, r):
 
 
 def baue(r, modus, W16_ref, ziel, xor_nativ=True, carry_variante="or",
-         hashing=False, assoz="linear"):
+         hashing=False, assoz="linear", mit_W=False):
     """CNF fuer: r-rundige Kompression einer Nachricht == ziel.
     modus 'block' = 512 freie Bits, 'k1' = 256 freie Bits mit festem Padding.
     Kodierungsvarianten siehe CNF.
-    Rueckgabe: (CNF, freie Literale in Reihenfolge W0.bit0 .. W7.bit31, H)"""
+    Rueckgabe: (CNF, freie Literale in Reihenfolge W0.bit0 .. W7.bit31, H).
+    Mit mit_W=True zusaetzlich die Wortliste W (auch die Expansionswoerter
+    W16..W(r-1)) als viertes Element - noetig, um Ratemengen zu untersuchen,
+    die nicht auf Nachrichtenbits beschraenkt sind (Abschnitt 24)."""
     F = CNF(xor_nativ=xor_nativ, carry_variante=carry_variante,
             hashing=hashing, assoz=assoz)
     baum = (assoz == "baum")
@@ -212,4 +215,4 @@ def baue(r, modus, W16_ref, ziel, xor_nativ=True, carry_variante="or",
     for i in range(8):
         for j in range(32):
             F.add(H[i][j] if (ziel[i] >> j) & 1 else -H[i][j])
-    return F, frei, H
+    return (F, frei, H, W) if mit_W else (F, frei, H)

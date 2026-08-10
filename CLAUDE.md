@@ -18,12 +18,14 @@ Durchlauf des Bitcoin-Double-Hash).
 - Ein paar Skripte importieren voneinander gemeinsame Bausteine, u. a. `k1_cnf.py`
   (liefert `baue`, `sha_ref`, `PAD`, `IV`) und `k1_propagation.py` (liefert `Prop`) — verwendet von
   `k1_gnd_bitweise.py`, `k1_gnd_kurve.py`, `k1_gnd_vollstaendig.py`, `k1_neutral_bits.py`,
-  `k1_neutral_bits_paare.py`.
+  `k1_neutral_bits_paare.py`, `k1_gnd_revision.py`.
 - Abhängigkeiten: Python-Standardbibliothek plus `numpy` in einigen Skripten. Es gibt kein
   `requirements.txt`, kein Build-System und keine formale Test-Suite (`k1_test.py` ist ein
   Analyse-/Verifikationsskript, kein pytest-Test). `k1_sat_messlauf.py` (externe CDCL-Kalibrierung,
   Abschnitt 22) braucht zusätzlich das Paket `python-sat` (`pip install python-sat`) für
   In-Prozess-Bindings von CaDiCaL/Kissat — kein Solver-Binary auf dem PATH nötig.
+  Dasselbe gilt für die Kontrollskripte `k1_v1_rauschen.py`, `k1_v2_instanzvarianz.py`,
+  `k1_v4_permutation.py` und `k1_v5_overhead.py` (Abschnitte 22 und 25).
 
 ## Befehle
 

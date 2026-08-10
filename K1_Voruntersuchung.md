@@ -1366,18 +1366,25 @@ Kryptanalyse.
 - ~~Rückwärtsrechnung von K1~~ — **bearbeitet** (Abschnitt 18). Deterministisch
   über alle 64 Runden; die Sperre ist auf den Richtungskonflikt zwischen
   Übertrag und linearer Schicht lokalisiert und beziffert (Satz I).
-- ~~Neutrale Bits bei r = 17~~ — **erledigt** (Abschnitt 21). Ergebnis: null
-  von 64 geratenen Bits sind neutral, über zehn Instanzen reproduziert. Der
-  Sprung von g(16) = 0 auf g(17) = 64 ist damit kein Messartefakt eines zu
-  groß geratenen Backdoors, sondern die tatsächlich benötigte Zahl.
+- ~~Neutrale Bits bei r = 17~~ — **erledigt, mit umgekehrtem Vorzeichen**
+  (Abschnitt 21, revidiert in Abschnitt 24). Der Flip-Test ergab null von 64;
+  er kann eine überdimensionierte Ratemenge jedoch grundsätzlich nicht
+  erkennen (24.2). Ohne Beschränkung auf Nachrichtenbits gilt g\*(17) = 32:
+  der Sprung **war** ein Messartefakt.
 - ~~Gemeinsame Neutralität von Bitpaaren bei r = 17~~ — **erledigt**
-  (Abschnitt 21.5). Ergebnis: null von 20.160 geprüften Paaren sind gemeinsam
-  neutral, über dieselben zehn Instanzen. Satz K gilt damit auch auf
-  Paarebene. Höhere Ordnungen (Tripel usw.) bleiben unbeauftragt offen.
+  (Abschnitt 21.5), **Schlussfolgerung zurückgezogen** (24.2): 0 von 20.160
+  ist der Erwartungswert des Nullmodells, keine Bestätigung zweiter Ordnung.
 - ~~CDCL gegen Guess-and-Determine~~ — **erledigt** (Abschnitt 22). CaDiCaL
   und Kissat lösen r = 18 in ~109 s, scheitern beide an r = 19 innerhalb
   600 s — deckungsgleich mit der Literaturfront und deutlich unterhalb der
-  strukturellen Reichweite r = 22 aus Abschnitt 20.
+  strukturellen Reichweite r = 23 aus Abschnitt 24.
+- **Darstellungsvarianz bei r = 18.** Abschnitt 25 hat sie bei r = 17 mit
+  Faktor 1,4–4,3 vermessen; bei r = 18 fehlt sie. Solange sie fehlt, ist der
+  Faktor 32 aus 22.4 nicht als Instanzeffekt belegt. Direkt messbar mit
+  `k1_v4_permutation.py --r 18`.
+- **Ratemengen über Zustandswörtern.** Abschnitt 24 hat die Beschränkung auf
+  W₀…W₇ aufgehoben und mit W₁₆…W₍ᵣ₋₁₎ 32 Bit je Runde gespart. Ob eine dritte
+  Wahl unter 32·(r−16) kommt, ist offen und mit demselben Werkzeug messbar.
 - **Variante T mit schrittweise wiedereingesetzten Rechtsrotationen.** Die
   Reichweitentabelle in 18.8 sagt eine Klippe voraus. Direkt messbar wäre, ob
   ein Fensterlöser mit w+1 Ebenen die vorhergesagten Kosten trifft.
@@ -1857,11 +1864,18 @@ Rateordnung wortweise, W₀ zuerst:
 > **g(r) = 32 · (r − 15) für 17 ≤ r ≤ 23**, ohne einen einzigen Ausreißer.
 > Wachstum exakt 32,0 Bit je Runde.
 
+> ⚠ **Korrigiert in Abschnitt 24.** Diese Zahl misst die Ratemenge *unter der
+> Beschränkung auf Nachrichtenbits W₀…W₇*. Ohne diese Beschränkung gilt
+> **g\*(r) = 32 · (r − 16)** — durchgehend 32 Bit weniger. Die Kurve unten ist
+> als Messwert korrekt und über Instanzen reproduzierbar, aber sie ist um
+> genau ein Wort zu hoch angesetzt.
+
 **Jede zusätzliche Runde kostet genau ein Nachrichtenwort.** Der
 Freiheitsverbrauch ist ganzzahlig in Wörtern, nicht ungefähr wortgroß.
 
 Bei r = 23 ist 2^g = 2²⁵⁶ erreicht — das Verfahren ist dort erschöpft. **Die
-strukturelle Reichweite endet bei r = 22.**
+strukturelle Reichweite endet bei r = 22.** (Korrigiert in 24.5: mit der
+uneingeschränkten Ratemenge endet sie erst bei **r = 23**.)
 
 ### 20.4 Gibt es eine kleinere Ratemenge?
 
@@ -1924,6 +1938,12 @@ Propagationsmaschine messbar, ohne externen Solver.
 
 ## 21. Neutrale Bits bei r = 17
 
+> ⚠ **Die Messwerte dieses Abschnitts stehen, ihre Schlussfolgerungen nicht.**
+> Abschnitt 24 zeigt, dass der hier verwendete Flip-Test eine zu groß geratene
+> Ratemenge grundsätzlich nicht erkennen kann — auch nicht in der
+> Paar-Erweiterung 21.5 — und beantwortet die Ausgangsfrage mit anderem
+> Werkzeug, mit gegenteiligem Ergebnis.
+
 Abschnitt 20 misst g(17) = 64: bei wortweiser Ratereihenfolge bestimmt
 Unit-Propagation den gesamten Rest des Systems erst, nachdem W₀ und W₁
 vollständig geraten sind. Offen blieb (Abschnitt 16), ob diese 64 Bits
@@ -1985,8 +2005,16 @@ das Nullergebnis in 21.2 ist damit keine Artefakt-Erklärung wert.
 neutral bezüglich Unit-Propagation — geprüft einzeln, an zehn unabhängigen
 Instanzen, ohne Ausnahme.
 
-Damit ist die in Abschnitt 16 offene Frage entschieden: **g(17) = 64 ist die
-tatsächliche Zahl, kein Messartefakt eines überdimensionierten Backdoors.**
+~~Damit ist die in Abschnitt 16 offene Frage entschieden: **g(17) = 64 ist die
+tatsächliche Zahl, kein Messartefakt eines überdimensionierten Backdoors.**~~
+
+> **Zurückgezogen (Abschnitt 24).** Satz K bleibt als Messwert, trägt die
+> Aussage aber nicht: der Flip-Test liefert auch bei einer um 186 Bit zu großen
+> Ratemenge null neutrale Bits (24.2). Der Sprung **war** ein Artefakt — nicht
+> der Neutralität wegen, sondern weil die Ratemenge auf Nachrichtenbits
+> beschränkt war. Über den Expansionswörtern gilt g\*(17) = 32 (24.5).
+
+*Ursprünglicher Wortlaut:*
 Der Sprung von 0 auf 64 zwischen r = 16 und r = 17 ist real; die glatte Rate
 von 32 Bit je Runde beginnt erst ab r = 17 → 18, nicht schon beim Übergang
 in die rundenreduzierte Nachrichtenexpansion hinein.
@@ -2021,6 +2049,10 @@ insgesamt (`k1_neutral_bits_paare.py`).
 **Insgesamt: 0 gemeinsam neutrale Paare von 20.160 geprüften, über zehn
 unabhängige Instanzen.**
 
+> ⚠ **Schlussfolgerung zurückgezogen (24.2).** Der Paartest erbt die Blindheit
+> des Einzeltests: 0 von 20.160 ist der Erwartungswert des Nullmodells
+> (2⁻⁴⁹), keine Bestätigung zweiter Ordnung.
+
 **Einordnung.** Satz K erweitert sich damit auf die zweite Ordnung: Nicht
 nur ist kein einzelnes Bit der 64 neutral, auch kein Paar ist es gemeinsam.
 Die Ratemenge ist nicht nur einzeln, sondern paarweise starr. Höhere
@@ -2034,6 +2066,12 @@ routinemäßig weiterzutreiben.
 ---
 
 ## 22. CDCL-Kalibrierung gegen einen externen Solver
+
+> ⚠ **Teilweise revidiert in Abschnitt 25.** Die Reichweitenaussage (22.2/22.3)
+> und der Nullbefund zum Kodierungseffekt bei r = 18 (22.4) bleiben. Der
+> Positivbefund bei r = 17 („`aig` zuverlässig langsamer", 22.5/V2) ist
+> zurückgezogen, der Overhead-Anteil von 7–10 % auf 12–22 % korrigiert und das
+> Vorzeichenargument in 22.4 gestrichen.
 
 Abschnitt 17.3 nennt als offenen Halbschritt: die Kodierung (`k1_sat_kodierung.py`)
 liegt vor, die eigentliche Messung gegen einen externen CDCL-Solver stand noch
@@ -2142,16 +2180,22 @@ Kein einziger Wert zensiert, Höchstwert 616 s (`k1_v2_instanzvarianz.py`).
 | `xaig_andmin` | Kissat | 11,7 | 69,3 | 133,4 |
 
 **Ergebnis: kein Kodierungseffekt.** Im gepaarten Vorzeichentest ist **kein
-einziger** Unterschied signifikant (alle p ≥ 0,109). Die beiden Solver
+einziger** Unterschied signifikant (alle p ≥ 0,109). ~~Die beiden Solver
 widersprechen sich sogar in der Richtung: unter CaDiCaL schlägt `andmin` die
 `or`-Form in 7 von 10 Instanzen, unter Kissat ist es umgekehrt 7 von 10. Ein
-echter Kodierungseffekt wechselt nicht das Vorzeichen mit dem Solver.
+echter Kodierungseffekt wechselt nicht das Vorzeichen mit dem Solver.~~
+(Argument **gestrichen**, siehe 25.5: 7/10 ist beidseitig p = 0,344, also
+kein Vorzeichen; und Kodierungseffekte dürfen solverabhängig sein. Der
+Nullbefund selbst folgt aus den p-Werten und bleibt bestehen.)
 
 **Was den Unterschied stattdessen erklärt: Instanzvarianz.** Bei
 *identischer* Kodierung streut `aig` unter CaDiCaL von 19,3 s bis 616,3 s —
 **Faktor 32**. Die Verteilung ist schwerschwänzig, und zwar erst ab r = 18:
 bei r = 17 liegt die Spanne über 60 Instanzen nur bei Faktor 2–4 (22.5).
 Zum Vergleich das Maschinenrauschen bei unveränderter Eingabe: **0,7–1,8 %**.
+Nicht abgetrennt ist dabei die **Darstellungsvarianz** (25.3): reine
+Umnumerierung derselben Formel erzeugt bei r = 17 bereits Faktor 1,4–4,3.
+Die Zuschreibung des Faktors 32 an die Instanz ist damit unbelegt.
 
 **Zur Prognose aus 9.11.** Alle drei Kodierungen lösen r = 18 durchgehend,
 über eine Spanne von 24.579 bis 48.119 Variablen. Für r = 18 ist die
@@ -2201,7 +2245,10 @@ nie die Fehlerquelle.
 Die Verteilung ist dort **eng** (Spanne Faktor 2–4, keine Ausreißer, keine
 Timeouts). `aig` ist zuverlässig langsamer (46/60 bzw. 51/60, p bis
 3·10⁻⁸, bei beiden Solvern gleichgerichtet), aber nur um Faktor ≈ 1,4;
-davon gehen 7–10 % auf das Einlesen der größeren Datei. Zwischen `or` und
+davon gehen 7–10 % auf das Einlesen der größeren Datei (**gemessen 12–22 %**,
+siehe 25.2). **Dieser Befund ist in 25.3/25.4 zurückgezogen**: Faktor 1,4 liegt
+innerhalb der Permutationsstreuung, und die feste Darstellung jeder Variante
+fällt aus der Paarung nicht heraus. Zwischen `or` und
 `andmin` liegt der Medianfaktor bei 1,06 bzw. 1,26 — an der Nachweisgrenze.
 
 **V3 — Verteilung bei r = 18.** Die Messung in 22.4. Hier ist die Verteilung
@@ -2292,6 +2339,415 @@ Parallelisierung.
   propagationsvollständig verifiziert; zusätzliche Übertragsklauseln können
   daran nichts verbessern.
 
+## 24. Revision der Messmethodik zu Abschnitt 20 und 21
+
+Anlass war ein Formunterschied, kein Rechenfehler: Die Kurve aus 20.3 wächst ab
+r = 18 mit exakt 32 Bit je Runde, springt aber beim Übergang r = 16 → 17 um 64.
+Abschnitt 21 hat genau diesen Verdacht geprüft und verworfen. Dieser Abschnitt
+prüft die beiden Messungen selbst nach. Werkzeug: `k1_gnd_revision.py`, dieselbe
+Propagationsmaschine, kein externer Solver.
+
+Ergebnis vorweg: **Der Verdacht war berechtigt, die Widerlegung in Abschnitt 21
+trägt nicht, und die Ursache liegt an einer dritten Stelle** — nicht in der
+Streuung, nicht in der Rücknahme-Logik, sondern in einer stillschweigenden
+Beschränkung der Ratemenge.
+
+### 24.1 Was reproduzierbar ist
+
+Erste Vermutung war Instanzstreuung: 20.3 und 21 nennen jeweils nur `seed = 0`.
+Nachgemessen über fünf Instanzen je Rundenzahl:
+
+| r | 16 | 17 | 18 | 19 | 20 | 21 | 22 |
+|---|---|---|---|---|---|---|---|
+| g(r), seeds 0–4 | 0 | 64 | 96 | 128 | 160 | 192 | 224 |
+
+Kein einziger abweichender Wert. **Die publizierte Kurve ist als Messwert
+korrekt und über Instanzen stabil.** Damit ist Streuung als Erklärung
+ausgeschlossen und der Verdacht muss der *Definition* der Messgröße gelten.
+
+### 24.2 Der Flip-Test aus 21.2 hat keine Trennschärfe
+
+Der Test aus 21.2 kippt je ein Bit der Ratemenge und fragt, ob die Propagation
+trotzdem konfliktfrei schließt. Dieser Test kann eine zu groß geratene Menge
+prinzipiell nicht erkennen:
+
+> Ist *S* ein starkes Backdoor bezüglich Unit-Propagation, so bestimmt die
+> Propagation aus **jeder** Belegung von *S* alles Übrige — oder sie meldet
+> Konflikt. Ein geflipptes Bit könnte also nur dann „neutral“ heißen, wenn zu
+> der geflippten Belegung ein **zweites Urbild** desselben Zielhashes gehört.
+> Der Erwartungswert dafür ist 2⁻⁶⁴ pro Flip.
+
+Null neutrale Bits sind damit exakt die Vorhersage des Nullmodells. Der Befund
+aus 21.2 ist nicht falsch — er ist ohne Aussagekraft, weil der Test unter jeder
+Hypothese dasselbe Ergebnis liefert.
+
+**Dasselbe gilt für 21.5.** Die Erweiterung auf Bitpaare erbt die Blindheit
+unverändert: ein gemeinsam geflipptes Paar könnte nur dann neutral heißen, wenn
+zu dieser Belegung ein zweites Urbild gehört. Bei 20.160 geprüften Paaren und
+2⁻⁶⁴ je Paar liegt der Erwartungswert bei 2⁻⁴⁹. **0 von 20.160 ist keine
+Bestätigung zweiter Ordnung, sondern dieselbe Nullmessung mit größerer
+Stichprobe.** Die Aussage „die Ratemenge ist nicht nur einzeln, sondern
+paarweise starr" ist damit nicht gemessen; die tragfähige Verallgemeinerung
+wäre leave-two-out (24.4).
+
+**Kontrolle, die das direkt zeigt.** Derselbe Flip-Test, angewandt auf eine
+nachweislich viel zu große Ratemenge (ebenenweise Rateordnung, 250 statt
+64 Bit — 186 Bit davon entbehrlich):
+
+| Seed | \|wortweise\| | \|ebenenweise\| | Flip-Test (wortweise) | Flip-Test (ebenenweise) |
+|---|---|---|---|---|
+| 0 | 64 | 250 | 0 | **0** |
+| 1 | 64 | 250 | 0 | **0** |
+| 2 | 64 | 250 | 0 | **0** |
+
+Der Test meldet auch bei 186 überflüssigen Bits null neutrale Bits.
+
+### 24.3 Die Positivkontrolle aus 21.3 prüft nichts
+
+21.3 begründet den Nullbefund damit, dass Bits *außerhalb* der Ratemenge beim
+Flippen zuverlässig einen Konflikt auslösen (60/60 Treffer). Instrumentiert man
+diesen Lauf, ergibt sich:
+
+> **Trail-Zuwachs je geflipptem Kontrollbit: 0. Propagationsschritte insgesamt: 0.**
+
+Nach vollständigem Raten ist jede Variable belegt; der „Konflikt“ entsteht schon
+in `enqueue()` an der Wertprüfung, bevor eine einzige Klausel angefasst wird.
+Geprüft wird also allein, dass `val()` eine belegte Variable erkennt — weder
+`mark`/`undo` noch die Propagation selbst. Die Kontrolle besteht mit derselben
+Sicherheit auch dann, wenn die Propagationsmaschine defekt wäre.
+
+### 24.4 Der Test, der die Frage beantwortet: leave-one-out
+
+Notwendigkeit misst man nicht durch Kippen, sondern durch **Weglassen**: Bit *i*
+gar nicht setzen und fragen, ob die Propagation trotzdem schließt.
+
+| Seed | Menge | Größe | entbehrliche Bits | Restoffenheit ohne je ein Bit |
+|---|---|---|---|---|
+| 0 | wortweise | 64 | **0** | 7.137 … 9.907 |
+| 0 | ebenenweise | 250 | **186** | 0 … 9.714 |
+| 1 | wortweise | 64 | **0** | 7.053 … 9.913 |
+| 1 | ebenenweise | 250 | **186** | 0 … 9.719 |
+
+Dieser Test erkennt die überdimensionierte Menge sofort und bestätigt die
+wortweise Menge als **einzeln-minimal**: kein einzelnes ihrer 64 Bits ist
+verzichtbar.
+
+### 24.5 Der eigentliche Fehler: die Ratemenge war beschränkt
+
+Einzeln-minimal ist nicht dasselbe wie kleinstmöglich. Abschnitt 20 hat g(r)
+ausschließlich über den 256 Nachrichtenbits W₀…W₇ gemessen — alle drei
+Rateordnungen in 20.4 variieren nur die *Reihenfolge* innerhalb dieser Menge,
+nie die Menge selbst. Guess-and-Determine darf aber jede Variable des Systems
+raten. Nächstliegende Alternative sind die Expansionswörter W₁₆…W₍ᵣ₋₁₎:
+
+| r | g(r) über W₀…W₇ | **g\*(r) über W₁₆…** | Ersparnis | Nachricht rekonstruiert | Nachrechnung trifft Ziel |
+|---|---|---|---|---|---|
+| 16 | 0 | **0** | 0 | ✓ | ✓ |
+| 17 | 64 | **32** | 32 | ✓ | ✓ |
+| 18 | 96 | **64** | 32 | ✓ | ✓ |
+| 19 | 128 | **96** | 32 | ✓ | ✓ |
+| 20 | 160 | **128** | 32 | ✓ | ✓ |
+| 21 | 192 | **160** | 32 | ✓ | ✓ |
+| 22 | 224 | **192** | 32 | ✓ | ✓ |
+| 23 | 256 | **224** | 32 | ✓ | ✓ |
+| 24 | 256 | 256 | 0 | ✓ | ✓ |
+
+Jede Zeile mit Korrektheitsprobe: aus der geschlossenen Propagation wird W₀…W₇
+ausgelesen, mit der Referenzimplementierung nachgerechnet und gegen den
+Zielhash geprüft — bitidentisch in allen Fällen. Stabil über vier Seeds.
+
+> **g\*(r) = 32 · (r − 16) für 16 ≤ r ≤ 23.**
+
+**Der Sprung bei r = 17 beträgt 32, nicht 64.** Die glatte Rate von 32 Bit je
+Runde gilt ohne Ausnahme ab r = 16 — genau das, was Abschnitt 21 vermutet und
+verworfen hatte.
+
+**Struktureller Grund, im Padding ablesbar.** Es ist W₉ = W₁₄ = 0, also
+
+> W₁₆ = σ₁(W₁₄) + W₉ + σ₀(W₁) + W₀ = **W₀ + σ₀(W₁)**
+
+(an 1000 Zufallsnachrichten nachgerechnet). Die 17. Runde fordert nur dieses
+eine 32-Bit-Aggregat an, nicht W₀ und W₁ einzeln. Wer wortweise rät, bezahlt
+32 Bit für Information, die die Runde nie anfordert. Ab r = 18 verschwindet der
+Effekt aus der *Rate*, weil W₀ und W₁ dann schon bezahlt sind — der Versatz von
+32 Bit bleibt aber im *Niveau* stehen. Genau daher der Formunterschied
+zwischen Sprunghöhe und Steigung.
+
+**Die Aufzählung ist erschöpfend.** σ₀ und σ₁ haben über GF(2) beide Rang 32,
+sind also bijektiv, und W₍₁₆₊ⱼ₎ enthält Wⱼ additiv. Die Abbildung
+(W₀…W₇) → (W₁₆…W₂₃) ist damit dreiecksförmig bijektiv: jeder aufgezählte
+Expansionsvektor ist erreichbar, 2^g\* zählt nichts doppelt und nichts umsonst.
+
+### 24.6 Korrekturen
+
+| Fundstelle | Aussage bisher | Korrektur |
+|---|---|---|
+| 20.3 | g(r) = 32(r − 15) | **g\*(r) = 32(r − 16)**; die alte Kurve gilt nur unter Beschränkung auf Nachrichtenbits |
+| 20.3 | Sprung 0 → 64 bei r = 17 | Sprung 0 → **32** |
+| 20.5 | strukturelle Reichweite endet bei r = 22 | endet bei **r = 23** (g\*(23) = 224 < 256, erschöpft erst bei r = 24) |
+| 20.5 | „um eine Runde zu gewinnen, müssen 32 Bit zurückgewonnen werden“ | unverändert gültig — die Rate war nie das Problem, nur das Niveau |
+| 21.4, Satz K | 0 von 64 Bits neutral, „g(17) = 64 ist die tatsächliche Zahl“ | Messwert bleibt, **Schlussfolgerung fällt**: der Test kann Überdimensionierung nicht erkennen (24.2) |
+| 21.5 | 0 von 20.160 Paaren gemeinsam neutral, „paarweise starr“ | Messwert bleibt, **Schlussfolgerung fällt** aus demselben Grund (24.2) |
+| 21.4 | „der Sprung von 0 auf 64 ist real“ | **widerlegt** (24.5) |
+| 16 | „Neutrale Bits — erledigt“ | die dahinterstehende Frage war *nicht* entschieden; jetzt entschieden, mit umgekehrtem Vorzeichen |
+
+Satz J (Linearzeitlösbarkeit für r ≤ 16) ist nicht berührt; g\*(16) = 0
+bestätigt ihn zusätzlich.
+
+### 24.7 Verhältnis zur CDCL-Messung in Abschnitt 22
+
+22.3 stützt die Lesart aus 20/21 mit dem Argument, Propagationsstruktur und
+CDCL-Laufzeit brächen „an vergleichbarer Stelle“ ein. Diese Stütze bleibt
+bestehen, aber die Zahl darin ändert sich: Der Propagationsübergang kostet
+**32 Bit, nicht 64**. Der qualitative Befund — ein scharfer Übergang genau
+dort, wo die Nachrichtenexpansion einsetzt — ist unberührt, denn g\*(16) = 0
+gegen g\*(17) = 32 ist derselbe Sprung von „gar nichts zu raten“ auf „ein
+volles Wort zu raten“. Zu korrigieren ist nur der Nebensatz in 22.3, der die
+strukturelle Reichweite mit r = 22 und g(22) = 224 beziffert: richtig ist
+**r = 23 mit g\*(23) = 224**.
+
+### 24.8 Was diese Korrektur nicht bedeutet
+
+Der Angriffsaufwand sinkt um Faktor 2³², die Reichweite wächst um eine Runde —
+beides ändert an der Gesamtlage nichts. 2²²⁴ Propagationsläufe bei r = 23 sind
+so unerreichbar wie 2²⁵⁶, und die Einschränkung aus Lehre 16 (erfüllbar
+konstruierte Instanzen, bekannte Lösung, keine Rückverfolgung) gilt für g\*
+unverändert. Der Wert der Revision liegt nicht in der kleineren Zahl, sondern
+darin, dass die Kurve jetzt **eine einzige Gerade ohne Knick** ist: ein Knick
+ohne strukturelle Erklärung war das eigentliche Warnsignal.
+
+**Weiterhin offen:** ob eine Ratemenge über noch anderen Variablen —
+Zustandswörtern statt Nachrichten- oder Expansionswörtern — unter
+32 · (r − 16) kommt. Diese Revision hat die Beschränkung auf W₀…W₇ aufgehoben,
+aber die Menge der geprüften Alternativen nicht ausgeschöpft.
+
+### 24.9 Zusätzliche methodische Lehren
+
+17. **Ein Test, der unter jeder Hypothese dasselbe sagt, ist kein Test.** Der
+   Flip-Test in 21.2 liefert null neutrale Bits, gleichgültig ob die Ratemenge
+   passend oder um 186 Bit zu groß ist. Vor der Messung ist zu prüfen, welches
+   Ergebnis die Gegenhypothese vorhersagt — hier: dasselbe. Eine größere
+   Stichprobe heilt das nicht: 21.5 hat den blinden Test von 64 auf 20.160
+   Prüfungen skaliert und damit nur die Nullmessung vergrößert.
+
+18. **Eine Positivkontrolle muss den fraglichen Mechanismus durchlaufen.** Die
+   Kontrolle in 21.3 sollte `mark`/`undo` und die Propagation absichern, löste
+   aber null Propagationsschritte aus. Kontrollen gehören instrumentiert, nicht
+   nur bestanden.
+
+19. **Freiheitsgrade zählt man an der Stelle, an der sie verbraucht werden.**
+   g(r) wurde über Nachrichtenbits gemessen, verbraucht wird Freiheit aber am
+   Expansionswort. Der Unterschied betrug hier genau ein Wort und erzeugte einen
+   Knick, der nach Struktur aussah und keine war.
+
+20. **Ein Knick ohne Mechanismus ist ein Messfehlerverdacht.** Sieben Punkte
+   auf einer Geraden und ein Ausreißer am Rand: die Erklärung lag nicht im
+   Objekt, sondern in der Messgröße.
+
+---
+
+---
+
+## 25. Revision der Messmethodik zu Abschnitt 22
+
+Anlass war eine Rückfrage zum Befund in 22.4: Zwei Solver ordnen dieselben
+Kodierungen gegenläufig, die Streuung beträgt Faktor 32, und einzelne Läufe
+sind praktisch nicht wiederholbar. 22.5 hat darauf bereits mit einer
+Verifikationskette reagiert (V1 Maschinenrauschen, V2 r = 17, V3 r = 18) und
+den ersten Anlauf zurückgezogen. Dieser Abschnitt prüft, ob die Kette
+vollständig ist. Werkzeuge: `k1_v4_permutation.py`, `k1_v5_overhead.py`.
+
+Ergebnis vorweg: **Die Kette hat eine Lücke und eine unterschätzte Größe.** Der
+Nullbefund bei r = 18 bleibt bestehen, der Positivbefund bei r = 17 nicht.
+
+### 25.1 Was in 22.4/22.5 methodisch richtig ist
+
+Damit die Kritik einzuordnen ist, zuerst das Tragfähige — es ist die Mehrzahl
+der Entscheidungen:
+
+- **Die Paarung ist korrekt gebaut.** In `k1_v2_instanzvarianz.erzeuge` hängt
+  das Ziel nur vom Seed ab, nicht von der Variante; bei gleichem Seed kodieren
+  alle drei Varianten dieselbe Aufgabe. Instanzschwierigkeit fällt als
+  Störgröße tatsächlich heraus.
+- **Kein Wert zensiert**, Timeouts werden gezählt statt verrechnet.
+- **Vorzeichentest statt Mittelwert** ist bei schwerschwänziger Verteilung die
+  richtige Wahl.
+- **Der Rückzug des ersten Anlaufs war korrekt** und aus dem richtigen Grund
+  (Einzelinstanz im schwerschwänzigen Bereich).
+
+### 25.2 Der Zeitnehmer misst mehr als das Lösen
+
+`k1_sat_messlauf.lauf` startet die Uhr vor dem Kindprozess:
+
+```
+t0 = time.time(); p.start(); p.join(timeout)
+```
+
+Im Kindprozess laufen danach Interpreterstart, `import pysat`, das Parsen der
+DIMACS-Datei in reinem Python und der Bootstrap der Klauseldatenbank — und
+erst dann `solve()`. **Alle Summanden außer dem letzten wachsen mit der
+Klauselzahl**, also mit genau der Größe, deren Wirkung 22.4 untersucht. Das ist
+keine Zufallsstörung, sondern eine systematische Verzerrung entlang der
+Untersuchungsachse.
+
+22.4 schätzt diesen Anteil bei r = 17 auf 7–10 %. Gemessen statt geschätzt
+(gleicher Kindprozess-Pfad, gleiche Datei, nur ohne `solve()`; 3 Instanzen,
+je 3 Wiederholungen):
+
+| Variante | Klauseln (r = 17) | Solver | Overhead | Gesamt | Anteil |
+|---|---|---|---|---|---|
+| `aig` | 131.477 | CaDiCaL | 0,30 s | 1,97 s | **15,0 %** |
+| `aig` | 131.477 | Kissat | 0,23 s | 1,03 s | **22,5 %** |
+| `xaig_or` | 77.475 | CaDiCaL | 0,21 s | 1,09 s | 19,1 % |
+| `xaig_or` | 77.475 | Kissat | 0,16 s | 1,04 s | 15,2 % |
+| `xaig_andmin` | 84.677 | CaDiCaL | 0,22 s | 1,17 s | 18,4 % |
+| `xaig_andmin` | 84.677 | Kissat | 0,17 s | 1,45 s | 12,1 % |
+
+**Der Anteil liegt bei 12–22 %, nicht bei 7–10 %** — rund doppelt so hoch wie
+angegeben, und der Overhead der größten Kodierung ist absolut der größte
+(0,30 s gegen 0,21 s unter CaDiCaL). Nach Abzug verschieben sich die Faktoren
+spürbar, aber nicht dramatisch (CaDiCaL `aig`/`xaig_or` 0,55× → 0,53×; Kissat
+`aig`/`xaig_andmin` 1,41× → 1,60×). **Der Overhead allein kippt den r-17-Befund
+nicht** — er erklärt einen Teil davon und war um Faktor 2 unterschätzt.
+
+### 25.3 Die Lücke in der Kontrollkette: Darstellungsvarianz
+
+V1 misst dieselbe Datei mehrfach (0,7–1,8 %). V2/V3 messen verschiedene
+Instanzen (Faktor 2–4 bzw. 32). Dazwischen fehlt die Quelle, die der
+Kodierungsvergleich unkontrolliert mitmisst:
+
+> **Gleiche Instanz, gleiche Kodierung, nur andere Darstellung** — Variablen
+> umnumeriert, Klauseln und Literale umgeordnet. Die Aufgabe ist identisch, die
+> Permutation ist erfüllbarkeitserhaltend und bildet Lösungen bijektiv ab.
+
+CDCL-Solver sind gegen die Darstellung nicht invariant: Verzweigungsheuristik,
+Klauseldatenbank und Vorverarbeitung hängen an der Reihenfolge des Auftretens.
+Gemessen an der Instanz aus V2 (Seed 0, r = 17), 12 Permutationen je Zelle:
+
+| Variante | Solver | min | Median | max | **max/min** |
+|---|---|---|---|---|---|
+| `aig` | CaDiCaL | 1,11 | 2,13 | 2,58 | **2,33×** |
+| `aig` | Kissat | 1,08 | 2,10 | 4,64 | **4,31×** |
+| `xaig_or` | CaDiCaL | 0,55 | 1,13 | 1,29 | **2,36×** |
+| `xaig_or` | Kissat | 0,94 | 1,29 | 2,28 | **2,43×** |
+| `xaig_andmin` | CaDiCaL | 1,09 | 1,27 | 1,53 | **1,41×** |
+| `xaig_andmin` | Kissat | 1,33 | 2,27 | 2,90 | **2,17×** |
+
+**Reine Umnumerierung erzeugt bei r = 17 Faktor 1,4 bis 4,3.** Zum Vergleich:
+V2 berichtet dort als Kodierungseffekt Faktor ≈ 1,4. **Der berichtete Effekt
+liegt vollständig innerhalb der Streuung, die schon das bloße Umschreiben
+derselben Aufgabe erzeugt.**
+
+### 25.4 Warum die Paarung das nicht auffängt
+
+Der naheliegende Einwand lautet: Permutationsstreuung ist symmetrisches
+Rauschen, und der gepaarte Vorzeichentest über 60 Instanzen mittelt Rauschen
+weg. Das gilt hier gerade nicht:
+
+> Jede Kodierungsvariante hat **eine feste** Darstellung — die, die ihr
+> Konstruktionsweg erzeugt. Diese Darstellung ist über alle 60 Instanzen
+> **dieselbe**. Ihr Beitrag ist damit kein Rauschen, das sich herausmittelt,
+> sondern ein **konstanter Versatz**, den der Vorzeichentest in jeder Instanz
+> gleichgerichtet mitzählt.
+
+Genau das erzeugt hohe Signifikanz bei fehlender Kausalität: p = 3·10⁻⁸ misst,
+wie *konsistent* der Versatz ist, nicht, *woher* er kommt. Direkt sichtbar am
+Vergleich der natürlichen Reihenfolge (Permutation 0 — das, was 22.4
+tatsächlich gemessen hat) mit dem Median über die Permutationen:
+
+| Variante | Solver | natürliche Reihenfolge | Permutationsmedian | Verhältnis |
+|---|---|---|---|---|
+| `aig` | CaDiCaL | 2,20 s | 2,12 s | 1,04× |
+| `aig` | Kissat | 1,08 s | 2,10 s | **0,51×** |
+| `xaig_or` | Kissat | 0,98 s | 1,29 s | 0,76× |
+| `xaig_andmin` | Kissat | 1,33 s | 2,26 s | 0,59× |
+
+Unter Kissat ist die natürliche Reihenfolge von `aig` etwa **doppelt so
+schnell wie eine typische Permutation derselben Formel**. Ein solcher
+Sonderstatus der natürlichen Reihenfolge ist über alle Instanzen konstant und
+für den Vergleich der Kodierungen nicht korrigierbar, solange die Darstellung
+nicht randomisiert wird.
+
+**Richtiges Design:** je Instanz und Variante eine *zufällige* Permutation
+ziehen. Dann wird der Darstellungsbeitrag zu Rauschen, das der Vorzeichentest
+tatsächlich wegmittelt, und der Test misst die Kodierung.
+
+### 25.5 Das Vorzeichenargument trägt nicht
+
+22.4 begründet den Nullbefund unter anderem so: „Die beiden Solver
+widersprechen sich sogar in der Richtung … Ein echter Kodierungseffekt wechselt
+nicht das Vorzeichen mit dem Solver." Beide Hälften halten nicht:
+
+- **7 von 10 ist kein Vorzeichen.** Im exakten Vorzeichentest ist 7/10
+  beidseitig p = 0,344. Zwei Stichproben mit p = 0,34 in entgegengesetzte
+  Richtungen sind der Normalfall unter der Nullhypothese — es gibt keinen
+  Widerspruch, der erklärt werden müsste, und daraus folgt nichts.
+- **Die Prämisse ist falsch.** Kodierungseffekte dürfen solverabhängig sein und
+  sind es regelmäßig: CaDiCaL und Kissat unterscheiden sich in Vorverarbeitung
+  und Inprocessing, und XOR-lastige Formeln werden davon verschieden berührt.
+  Ein Effekt, der nur bei einem Solver auftritt, ist ein solverabhängiger
+  Effekt, kein Nicht-Effekt.
+
+Der Nullbefund selbst bleibt richtig — er folgt aus den nicht signifikanten
+p-Werten und der ehrlich benannten geringen Trennschärfe (n = 10), nicht aus
+dem Vorzeichenargument. Zu streichen ist nur die Begründung.
+
+### 25.6 Korrigierte Lesart
+
+| Aussage in 22 | Status nach dieser Prüfung |
+|---|---|
+| 22.2/22.3: Reichweite 18 Runden, r = 19 Timeout, beide Solver | **unberührt** — Reichweitenaussage hängt nicht an Zeitvergleichen |
+| 22.4: kein Kodierungseffekt bei r = 18 | **bleibt** — eine zusätzliche Rauschquelle macht einen Nullbefund nicht positiv |
+| 22.4: „Instanzvarianz erklärt den Unterschied" | **unbelegt** — Darstellungsvarianz ist nicht abgetrennt; Faktor 32 bei r = 18 ist nicht als Instanzeffekt nachgewiesen |
+| 22.4: Vorzeichenargument (Richtungswechsel) | **gestrichen** (25.5) |
+| 22.4/22.5: Einlesen macht 7–10 % aus | **korrigiert auf 12–22 %** (25.2) |
+| 22.5 V2: „`aig` ist zuverlässig langsamer", Faktor ≈ 1,4, p bis 3·10⁻⁸ | **zurückgezogen** — Effekt liegt in der Permutationsstreuung (1,4–4,3×), und die Paarung korrigiert den festen Darstellungsversatz nicht (25.3, 25.4) |
+| 22.5: „zwischen r = 17 und r = 18 ändert sich die Natur der Verteilung" | **plausibel, aber nicht mehr belegt** — die enge Verteilung bei r = 17 war die Grundlage; ihre Enge ist mit Faktor 1,4–4,3 aus reiner Permutation nicht mehr gegeben |
+
+**Nicht gemessen:** die Permutationsstreuung bei r = 18. Bei Laufzeiten bis
+616 s je Lauf war das im Rahmen dieser Prüfung nicht leistbar. Solange sie
+fehlt, ist offen, ob der Faktor 32 aus der Instanz oder aus der Darstellung
+stammt — und damit auch, ob die Verteilungsform sich zwischen r = 17 und
+r = 18 wirklich ändert. Das ist die nächste sinnvolle Messung, und sie ist mit
+`k1_v4_permutation.py --r 18` unmittelbar durchführbar.
+
+### 25.7 Antwort auf die Ausgangsfrage
+
+Die Ausgangsbeobachtung war: zwei Solver, gegenläufige Ergebnisse, keine
+Reproduzierbarkeit. Die Auflösung:
+
+> **Es gibt nichts zu reproduzieren.** Die berichteten Unterschiede zwischen
+> Kodierungen liegen unterhalb der Streuung, die dieselbe Aufgabe schon bei
+> bloßer Umnumerierung zeigt. Die Gegenläufigkeit der Solver ist keine
+> Anomalie, sondern das erwartete Bild, wenn zwei unabhängige Ziehungen aus
+> derselben Rauschquelle verglichen werden.
+
+Das Unbehagen war berechtigt und zeigte auf eine echte Lücke — allerdings
+nicht auf einen Rechenfehler, sondern auf eine fehlende Kontrolle.
+
+### 25.8 Weitere methodische Lehren
+
+21. **Der Zeitnehmer gehört um das Gemessene gelegt, nicht um den Prozess.**
+   `lauf()` maß Spawn, Import und Parsen mit — Größen, die mit der
+   CNF-Größe wachsen, also mit der Untersuchungsvariablen. Eine Messung, deren
+   Overhead entlang der Untersuchungsachse skaliert, ist verzerrt, nicht
+   verrauscht.
+
+22. **Paarung entfernt nur Störgrößen, die zwischen den Paaren variieren.**
+   Die Instanzschwierigkeit variiert und fällt heraus; die Darstellung jeder
+   Variante ist über alle Paare konstant und fällt nicht heraus. Ein hoch
+   signifikanter Vorzeichentest belegt Konsistenz, nicht Ursache.
+
+23. **Zu jedem Vergleichsobjekt gehört seine Invarianzgruppe.** Eine CNF ist
+   nur bis auf Umnumerierung bestimmt; ein Solver ist gegen diese Gruppe nicht
+   invariant. Wer zwei CNFs vergleicht, muss über die Gruppe mitteln —
+   sonst vergleicht er Repräsentanten statt Objekte.
+
+24. **Ein Nullbefund und seine Begründung sind zwei Dinge.** Der Nullbefund in
+   22.4 hält; die Begründung „ein echter Effekt wechselt nicht das Vorzeichen
+   mit dem Solver" ist unabhängig davon falsch. Falsche Argumente für richtige
+   Schlüsse fallen bei der nächsten Messung um.
+
 ---
 
 ## Anhang: Programme
@@ -2373,6 +2829,9 @@ validiert.
 | `k1_gnd_vollstaendig.py` | Korrektheitsprüfung, vollständige Kurve, wortweise gierig (20.3, 20.4) |
 | `k1_gnd_bitweise.py` | Bitweise gierige Suche mit Zufallskontrolle (20.4) |
 | `k1_neutral_bits.py` | Neutrale-Bits-Test bei r = 17, mit Positivkontrolle (Abschnitt 21) |
+| `k1_gnd_revision.py` | Methodikrevision zu 20/21: Trennschärfe des Flip-Tests, Leave-one-out, Ratemenge über Expansionswörtern (Abschnitt 24) |
+| `k1_v4_permutation.py` | V4: Darstellungsvarianz bei identischer Instanz und Kodierung (25.3) |
+| `k1_v5_overhead.py` | V5: Overhead-Anteil (Spawn, Parsen, Bootstrap) an der gemessenen Zeit (25.2) |
 | `k1_neutral_bits_paare.py` | Gemeinsame Bitpaar-Neutralität bei r = 17 (Abschnitt 21.5) |
 | `nachpruefung_saetze.py` | Nachrechnung Sätze 1–8, Ringstruktur, AND-minimale Formen (19.1) |
 | `nachpruefung_k1_1.py` | Nachrechnung K1-1 erschöpfend: Kollisionen, ANF, Nichtlinearität (19.1) |
@@ -2422,6 +2881,16 @@ validiert.
 | Ebenenweiser Löser, Variante B3 | 256/256 exakt, 544 Inversionen |
 | Variante T: Urbild gefunden | 161 Knoten, 32 Ebenen |
 | Abwärtsreichweite nach 1 Rechtsrotation | 0 → 18–19 (Kosten 2¹⁶ → 2³⁰⁴) |
+| g(r) über Nachrichtenbits (20.3) | 32·(r−15), seeds 0–4 identisch |
+| **g\*(r) über Expansionswörtern (24.5)** | **32·(r−16), 16 ≤ r ≤ 23** |
+| Flip-Test auf 186 Bit zu großer Ratemenge (24.2) | 0 neutrale Bits — keine Trennschärfe |
+| Leave-one-out, wortweise Menge r = 17 (24.4) | 0 von 64 entbehrlich (einzeln-minimal) |
+| Leave-one-out, ebenenweise Menge r = 17 (24.4) | 186 von 250 entbehrlich |
+| Propagationsschritte der Positivkontrolle 21.3 (24.3) | **0** |
+| W₁₆ unter Bitcoin-Padding (24.5) | W₀ + σ₀(W₁), 1000 Fälle geprüft |
+| Overhead-Anteil an `lauf()`, r = 17 (25.2) | **12–22 %** (bisher angegeben: 7–10 %) |
+| Darstellungsvarianz r = 17, reine Umnumerierung (25.3) | **Faktor 1,4–4,3** |
+| Kodierungseffekt r = 17 laut 22.5/V2 | Faktor ≈ 1,4 — innerhalb der Darstellungsvarianz |
 | K1(r) für r ≤ 16 | in Linearzeit lösbar, null geratene Bits |
 | Breite des freien Schedule-Fensters | **16 Runden** |
 | Ratemenge g(r), 17 ≤ r ≤ 23 | **32 · (r − 15)**, exakt |
